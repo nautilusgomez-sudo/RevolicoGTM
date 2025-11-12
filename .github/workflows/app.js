@@ -1,10 +1,28 @@
 // Lógica principal de Revolico GTM
 // Maneja carga de DB desde Gist, polling, búsqueda, pedidos y admin
+// Actualizado para Opción 1: Token encriptado en database.json con CryptoJS
 
-const { GIST_ID, GIST_FILE, POLL_INTERVAL, ADMIN_USER, ADMIN_PASS_INICIAL } = window.CONFIG;
+const { GIST_ID, GIST_FILE, POLL_INTERVAL, ADMIN_USER, ADMIN_PASS_INICIAL, CLAVE_MAESTRA } = window.CONFIG;
 let database = {};  // Cache local de la DB
 let ultimoTimestamp = null;  // Para polling
-let tokenAdmin = null;  // Token GitHub para escritura (solo admin)
+let tokenAdmin = null;  // Token GitHub desencriptado (de DB)
+
+// Función para encriptar token (usa AES de CryptoJS)
+function encriptarToken(token, clave) {
+    return CryptoJS.AES.encrypt(token, clave).toString();
+}
+
+// Función para desencriptar token
+function desencriptarToken(tokenEncriptado, clave) {
+    try {
+        const bytes = CryptoJS.AES.decrypt(tokenEncriptado, clave);
+        const tokenDesencriptado = bytes.toString(CryptoJS.enc.Utf8);
+        return tokenDesencriptado ? tokenDesencriptado : null;
+    } catch (error) {
+        console.error('Error desencriptando token:', error);
+        return null;
+    }
+}
 
 // Función para cargar database.json desde Gist (lectura anónima)
 async function cargarDatabase() {
@@ -13,6 +31,15 @@ async function cargarDatabase() {
         const respuesta = await fetch(urlRaw);
         if (!respuesta.ok) throw new Error('Error al cargar Gist');
         database = await respuesta.json();
+        
+        // Desencriptar token si existe en DB
+        if (database && database.admin && database.admin.tokenEncriptado) {
+            tokenAdmin = desencriptarToken(database.admin.tokenEncriptado, CLAVE_MAESTRA);
+            if (!tokenAdmin) {
+                console.warn('Token inválido o clave maestra incorrecta. Reconfigura como admin.');
+                tokenAdmin = null;
+            }
+        }
         return database;
     } catch (error) {
         console.error('Error cargando DB:', error);
@@ -20,10 +47,10 @@ async function cargarDatabase() {
     }
 }
 
-// Función para actualizar Gist (solo admin, con token)
+// Función para actualizar Gist (solo admin, con token desencriptado)
 async function actualizarDatabase(nuevaDB) {
     if (!tokenAdmin) {
-        alert('No autenticado como admin');
+        alert('Token no disponible. Configura como admin primero (login y token una vez).');
         return false;
     }
     try {
@@ -32,6 +59,7 @@ async function actualizarDatabase(nuevaDB) {
         const respuestaGet = await fetch(urlGist, {
             headers: { 'Authorization': `token ${tokenAdmin}` }
         });
+        if (!respuestaGet.ok) throw new Error('Token inválido o sin permisos');
         const gistActual = await respuestaGet.json();
         
         const nuevoContenido = { ...gistActual, files: { [GIST_FILE]: { 
@@ -50,14 +78,14 @@ async function actualizarDatabase(nuevaDB) {
         if (respuestaUpdate.ok) {
             database = nuevaDB;
             database.ultimaActualizacion = new Date().toISOString();
-            alert('DB actualizada');
+            alert('DB actualizada exitosamente');
             return true;
         } else {
             throw new Error('Error actualizando Gist');
         }
     } catch (error) {
         console.error('Error actualizando:', error);
-        alert('Error: ' + error.message);
+        alert('Error: ' + error.message + '. Verifica token.');
         return false;
     }
 }
@@ -187,7 +215,7 @@ async function enviarPedido() {
     };
     
     database.pedidos.push(pedido);
-    const exito = await actualizarDatabase(database);  // Solo admin puede escribir, pero para demo usamos token si está logueado
+    const exito = await actualizarDatabase(database);  // Usa token de DB
     if (exito || confirm('Sin token admin, pedido guardado local. ¿Continuar?')) {
         alert('¡Pedido enviado! Te contactaremos pronto.');
         window.history.back();  // Volver a index
@@ -206,20 +234,46 @@ async function inicializarAdmin() {
 }
 
 // Login admin (verifica contra DB, hashea pass simple con btoa para demo)
+// Actualizado: Maneja token una sola vez, encriptado en DB
 async function loginAdmin() {
     const user = document.getElementById('admin-user').value;
     const pass = btoa(document.getElementById('admin-pass').value);  // Hash simple (no seguro)
     
     if (user === ADMIN_USER && (database.admin?.password === pass || pass === btoa(ADMIN_PASS_INICIAL))) {
-        tokenAdmin = prompt('Ingresa tu Token GitHub para escritura:');
-        if (tokenAdmin) {
+        // Si no hay token en DB, pide una vez y encripta/guarda en Gist
+        if (!database.admin.tokenEncriptado || !tokenAdmin) {
+            const tokenIngresado = prompt('Ingresa tu Token GitHub (solo esta vez para todos los devices):');
+            if (!tokenIngresado) {
+                alert('Token requerido para continuar.');
+                return;
+            }
+            const tokenEncriptado = encriptarToken(tokenIngresado, CLAVE_MAESTRA);
+            database.admin.tokenEncriptado = tokenEncriptado;
+            tokenAdmin = tokenIngresado;  // Cache para esta sesión
+            const exito = await actualizarDatabase(database);  // Guarda en Gist para persistencia global
+            if (!exito) {
+                alert('Error guardando token. Intenta de nuevo.');
+                return;
+            }
             localStorage.setItem('adminLogged', 'true');
-            localStorage.setItem('adminToken', tokenAdmin);
-            tokenAdmin = localStorage.getItem('adminToken');
-            database.admin = { password: pass };  // Actualiza pass si es inicial
-            await actualizarDatabase(database);
-            mostrarPanelAdmin();
+            alert('Token configurado exitosamente. Ahora disponible en todos los devices.');
+        } else {
+            // Si ya existe en DB, desencripta y usa
+            tokenAdmin = desencriptarToken(database.admin.tokenEncriptado, CLAVE_MAESTRA);
+            if (!tokenAdmin) {
+                alert('Error desencriptando token. Reconfigura ingresando nuevo token.');
+                return;
+            }
+            localStorage.setItem('adminLogged', 'true');
+            alert('Login exitoso. Token cargado desde DB.');
         }
+        // Actualiza pass si era inicial
+        if (database.admin.password !== pass) {
+            database.admin.password = pass;
+            await actualizarDatabase(database);
+        }
+        mostrarPanelAdmin();
+        poblarNegociosSelect();
     } else {
         alert('Credenciales incorrectas');
     }
@@ -235,8 +289,7 @@ function mostrarPanelAdmin() {
 // Logout
 function logoutAdmin() {
     localStorage.removeItem('adminLogged');
-    localStorage.removeItem('adminToken');
-    tokenAdmin = null;
+    tokenAdmin = null;  // Limpia cache, pero DB retiene token
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('admin-panel').style.display = 'none';
 }
