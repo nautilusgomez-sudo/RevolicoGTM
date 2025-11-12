@@ -1,0 +1,36 @@
+/* Estilos personalizados para Revolico GTM - Responsive con Bootstrap */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.producto {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.categoria-filter {
+    margin: 10px 0;
+}
+
+/* Responsive: Ajustes para mobile */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    .card {
+        margin-bottom: 15px;
+    }
+}
