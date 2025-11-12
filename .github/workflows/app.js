@@ -1,6 +1,7 @@
 // Lógica principal de Revolico GTM
 // Maneja carga de DB desde Gist, polling, búsqueda, pedidos y admin
 // Actualizado para Opción 1: Token encriptado en database.json con CryptoJS
+// Mejora: Inicializa estructura completa si Gist/DB está vacío o incompleto (POST si no existe, init en login)
 
 const { GIST_ID, GIST_FILE, POLL_INTERVAL, ADMIN_USER, ADMIN_PASS_INICIAL, CLAVE_MAESTRA } = window.CONFIG;
 let database = {};  // Cache local de la DB
@@ -47,45 +48,68 @@ async function cargarDatabase() {
     }
 }
 
-// Función para actualizar Gist (solo admin, con token desencriptado)
+// Función para actualizar/crear Gist (solo admin, con token desencriptado)
 async function actualizarDatabase(nuevaDB) {
     if (!tokenAdmin) {
-        alert('Token no disponible. Configura como admin primero (login y token una vez).');
+        alert('Token no disponible. Configura como admin primero.');
         return false;
     }
     try {
-        // Para update, primero GET el Gist actual, luego PATCH
         const urlGist = `https://api.github.com/gists/${GIST_ID}`;
         const respuestaGet = await fetch(urlGist, {
             headers: { 'Authorization': `token ${tokenAdmin}` }
         });
-        if (!respuestaGet.ok) throw new Error('Token inválido o sin permisos');
-        const gistActual = await respuestaGet.json();
         
-        const nuevoContenido = { ...gistActual, files: { [GIST_FILE]: { 
-            content: JSON.stringify(nuevaDB, null, 2) 
-        } } };
-        
-        const respuestaUpdate = await fetch(urlGist, {
-            method: 'PATCH',
-            headers: { 
-                'Authorization': `token ${tokenAdmin}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(nuevoContenido)
-        });
-        
-        if (respuestaUpdate.ok) {
-            database = nuevaDB;
-            database.ultimaActualizacion = new Date().toISOString();
-            alert('DB actualizada exitosamente');
-            return true;
+        let nuevoContenido;
+        if (!respuestaGet.ok) {
+            // Si no existe (404), crea nuevo con POST
+            if (respuestaGet.status === 404) {
+                nuevoContenido = {
+                    description: 'DB de Revolico GTM',
+                    public: true,  // Público para lectura anónima
+                    files: { [GIST_FILE]: { content: JSON.stringify(nuevaDB, null, 2) } }
+                };
+                const respuestaPost = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `token ${tokenAdmin}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(nuevoContenido)
+                });
+                if (!respuestaPost.ok) throw new Error('Error creando Gist nuevo: ' + respuestaPost.statusText);
+                alert('Gist creado exitosamente (era nuevo).');
+                database = nuevaDB;
+                database.ultimaActualizacion = new Date().toISOString();
+                return true;
+            } else {
+                throw new Error('Error accediendo a Gist: ' + respuestaGet.status + ' - ' + respuestaGet.statusText);
+            }
         } else {
-            throw new Error('Error actualizando Gist');
+            // Existe, PATCH normal
+            const gistActual = await respuestaGet.json();
+            nuevoContenido = { ...gistActual, files: { [GIST_FILE]: { 
+                content: JSON.stringify(nuevaDB, null, 2) 
+            } } };
+            
+            const respuestaUpdate = await fetch(urlGist, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `token ${tokenAdmin}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(nuevoContenido)
+            });
+            
+            if (!respuestaUpdate.ok) throw new Error('Error actualizando Gist: ' + respuestaUpdate.statusText);
         }
+        
+        database = nuevaDB;
+        database.ultimaActualizacion = new Date().toISOString();
+        return true;
     } catch (error) {
-        console.error('Error actualizando:', error);
-        alert('Error: ' + error.message + '. Verifica token.');
+        console.error('Error actualizando/creando:', error);
+        alert('Error: ' + error.message + '. Verifica token y GIST_ID en config.js.');
         return false;
     }
 }
@@ -116,12 +140,15 @@ async function inicializarIndex() {
         renderizarContenido();
         iniciarPolling(renderizarContenido);
         Notification.requestPermission();
+    } else {
+        alert('Error cargando datos. Verifica GIST_ID en config.js.');
     }
 }
 
 // Poblar select de categorías únicas
 function poblarCategorias() {
-    const categorias = [...new Set(database.negocios.flatMap(n => n.productos.map(p => p.categoria)))];
+    if (!database.negocios) return;  // Protege si DB incompleta
+    const categorias = [...new Set(database.negocios.flatMap(n => n.productos ? n.productos.map(p => p.categoria) : []))];
     const select = document.getElementById('categoria');
     select.innerHTML = '<option value="">Todas las categorías</option>' + 
         categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -129,12 +156,17 @@ function poblarCategorias() {
 
 // Renderizar lista de negocios/productos
 function renderizarContenido() {
+    if (!database.negocios) {
+        document.getElementById('contenido').innerHTML = '<p>No hay datos disponibles. Configura como admin.</p>';
+        return;
+    }
+    
     const busqueda = document.getElementById('busqueda').value.toLowerCase();
     const categoria = document.getElementById('categoria').value;
     const ordenFecha = document.getElementById('fechaOrden').value;
     
     let productosFiltrados = database.negocios.flatMap(negocio => 
-        negocio.productos.map(prod => ({ ...prod, negocioNombre: negocio.nombre, negocioDireccion: negocio.direccion, negocioId: negocio.id }))
+        (negocio.productos || []).map(prod => ({ ...prod, negocioNombre: negocio.nombre, negocioDireccion: negocio.direccion, negocioId: negocio.id }))
     ).filter(prod => 
         (busqueda === '' || prod.nombre.toLowerCase().includes(busqueda) || prod.descripcion.toLowerCase().includes(busqueda)) &&
         (categoria === '' || prod.categoria === categoria)
@@ -148,6 +180,10 @@ function renderizarContenido() {
     }
     
     const contenido = document.getElementById('contenido');
+    if (productosFiltrados.length === 0) {
+        contenido.innerHTML = '<p>No hay productos que coincidan con la búsqueda.</p>';
+        return;
+    }
     contenido.innerHTML = productosFiltrados.map(prod => `
         <div class="col-md-4">
             <div class="card producto">
@@ -179,10 +215,18 @@ function hacerPedido(negocioId, productosIds) {
 async function cargarDetallesPedido() {
     if (!window.pedidoData) return;
     await cargarDatabase();
+    if (!database.negocios) {
+        alert('Datos no disponibles. Intenta más tarde.');
+        return;
+    }
     const negocio = database.negocios.find(n => n.id === parseInt(window.pedidoData.negocioId));
+    if (!negocio) return alert('Negocio no encontrado.');
+    
     const productos = window.pedidoData.productosIds.map(id => 
         negocio.productos.find(p => p.id === id)
-    );
+    ).filter(p => p);  // Filtra nulos
+    
+    if (productos.length === 0) return alert('Productos no encontrados.');
     
     const total = productos.reduce((sum, p) => sum + p.precio, 0);
     const precioDomicilio = negocio.precioDomicilio || 0;
@@ -203,6 +247,7 @@ function toggleDireccion() {
 
 // Enviar pedido (guarda en DB y notifica)
 async function enviarPedido() {
+    if (!database.pedidos) database.pedidos = [];
     const pedido = {
         id: Date.now(),  // ID simple
         negocioId: parseInt(document.getElementById('pedido-negocio-id').value),
@@ -224,23 +269,46 @@ async function enviarPedido() {
 
 // ========== FUNCIONES PARA ADMIN.HTML ==========
 
-// Inicializar admin
+// Inicializar admin (actualizado: inicializa DB si vacía)
 async function inicializarAdmin() {
     await cargarDatabase();
-    if (localStorage.getItem('adminLogged')) {
+    // Si DB vacía o sin estructura, inicializa básica (pero full init en login para token)
+    if (!database.ultimaActualizacion || !database.admin || database.negocios === undefined) {
+        database = {
+            ultimaActualizacion: new Date().toISOString(),
+            admin: database.admin || { password: btoa(ADMIN_PASS_INICIAL), tokenEncriptado: "" },
+            negocios: database.negocios || [],
+            pedidos: database.pedidos || []
+        };
+        // No actualiza aquí sin token; espera login
+    }
+    if (localStorage.getItem('adminLogged') && tokenAdmin) {
         mostrarPanelAdmin();
         poblarNegociosSelect();
     }
 }
 
-// Login admin (verifica contra DB, hashea pass simple con btoa para demo)
-// Actualizado: Maneja token una sola vez, encriptado en DB
+// Login admin (actualizado: maneja DB vacía y fuerza init si needed)
 async function loginAdmin() {
     const user = document.getElementById('admin-user').value;
     const pass = btoa(document.getElementById('admin-pass').value);  // Hash simple (no seguro)
     
-    if (user === ADMIN_USER && (database.admin?.password === pass || pass === btoa(ADMIN_PASS_INICIAL))) {
-        // Si no hay token en DB, pide una vez y encripta/guarda en Gist
+    // Si DB vacía o sin admin, inicializa aquí para el check
+    if (!database.admin) {
+        database.admin = { password: btoa(ADMIN_PASS_INICIAL), tokenEncriptado: "" };
+    }
+    if (!database.ultimaActualizacion) {
+        database.ultimaActualizacion = new Date().toISOString();
+    }
+    if (!database.negocios) {
+        database.negocios = [];
+    }
+    if (!database.pedidos) {
+        database.pedidos = [];
+    }
+    
+    if (user === ADMIN_USER && (database.admin.password === pass || pass === btoa(ADMIN_PASS_INICIAL))) {
+        // Si no hay token en DB, pide una vez y encripta/guarda
         if (!database.admin.tokenEncriptado || !tokenAdmin) {
             const tokenIngresado = prompt('Ingresa tu Token GitHub (solo esta vez para todos los devices):');
             if (!tokenIngresado) {
@@ -250,28 +318,52 @@ async function loginAdmin() {
             const tokenEncriptado = encriptarToken(tokenIngresado, CLAVE_MAESTRA);
             database.admin.tokenEncriptado = tokenEncriptado;
             tokenAdmin = tokenIngresado;  // Cache para esta sesión
-            const exito = await actualizarDatabase(database);  // Guarda en Gist para persistencia global
+            
+            // Inicializa estructura completa si no existe (agrega ejemplo si vacío)
+            if (database.negocios.length === 0) {
+                database.negocios.push({
+                    id: 1,
+                    nombre: "Negocio Ejemplo 1",
+                    direccion: "Guatemala City, Zona 1",
+                    precioDomicilio: 15.00,
+                    productos: [{
+                        id: 1,
+                        nombre: "Producto Ejemplo",
+                        descripcion: "Descripción del producto con oferta especial.",
+                        precio: 25.00,
+                        stock: 100,
+                        categoria: "Comida",
+                        esOferta: true,
+                        fechaPublicacion: new Date().toISOString()
+                    }],
+                    fechaCreacion: new Date().toISOString()
+                });
+            }
+            
+            const exito = await actualizarDatabase(database);  // Crea/guarda todo
             if (!exito) {
-                alert('Error guardando token. Intenta de nuevo.');
+                alert('Error guardando config inicial. Verifica GIST_ID y token en GitHub settings.');
                 return;
             }
             localStorage.setItem('adminLogged', 'true');
-            alert('Token configurado exitosamente. Ahora disponible en todos los devices.');
+            alert('Configuración inicial completada. Token y DB guardados para todos devices.');
         } else {
-            // Si ya existe en DB, desencripta y usa
+            // Carga token existente
             tokenAdmin = desencriptarToken(database.admin.tokenEncriptado, CLAVE_MAESTRA);
             if (!tokenAdmin) {
-                alert('Error desencriptando token. Reconfigura ingresando nuevo token.');
+                alert('Error con token existente. Reconfigura ingresando nuevo token.');
                 return;
             }
             localStorage.setItem('adminLogged', 'true');
             alert('Login exitoso. Token cargado desde DB.');
         }
-        // Actualiza pass si era inicial
+        
+        // Actualiza pass si cambió
         if (database.admin.password !== pass) {
             database.admin.password = pass;
             await actualizarDatabase(database);
         }
+        
         mostrarPanelAdmin();
         poblarNegociosSelect();
     } else {
@@ -297,7 +389,8 @@ function logoutAdmin() {
 // Poblar select de negocios
 function poblarNegociosSelect() {
     const select = document.getElementById('negocio-select');
-    select.innerHTML = database.negocios.map(n => `<option value="${n.id}">${n.nombre}</option>`).join('');
+    const negocios = database.negocios || [];
+    select.innerHTML = negocios.map(n => `<option value="${n.id}">${n.nombre}</option>`).join('');
 }
 
 // Registrar negocio nuevo
@@ -311,14 +404,16 @@ async function registrarNegocio() {
         fechaCreacion: new Date().toISOString()
     };
     database.negocios.push(nuevoNegocio);
-    await actualizarDatabase(database);
-    alert('Negocio registrado');
-    poblarNegociosSelect();
-    poblarListaNegocios();
-    // Limpiar form
-    document.getElementById('negocio-nombre').value = '';
-    document.getElementById('negocio-direccion').value = '';
-    document.getElementById('negocio-precio-domicilio').value = '';
+    const exito = await actualizarDatabase(database);
+    if (exito) {
+        alert('Negocio registrado');
+        poblarNegociosSelect();
+        poblarListaNegocios();
+        // Limpiar form
+        document.getElementById('negocio-nombre').value = '';
+        document.getElementById('negocio-direccion').value = '';
+        document.getElementById('negocio-precio-domicilio').value = '';
+    }
 }
 
 // Agregar producto a negocio
@@ -339,24 +434,27 @@ async function agregarProducto() {
     };
     
     negocio.productos.push(nuevoProducto);
-    await actualizarDatabase(database);
-    alert('Producto agregado');
-    poblarListaNegocios();
-    // Limpiar form
-    document.querySelectorAll('#admin-panel input, #admin-panel select, #admin-panel textarea').forEach(el => el.value = '');
-    document.getElementById('es-oferta').checked = false;
+    const exito = await actualizarDatabase(database);
+    if (exito) {
+        alert('Producto agregado');
+        poblarListaNegocios();
+        // Limpiar form
+        document.querySelectorAll('#admin-panel input, #admin-panel select, #admin-panel textarea').forEach(el => el.value = '');
+        document.getElementById('es-oferta').checked = false;
+    }
 }
 
 // Poblar lista de negocios en admin
 function poblarListaNegocios() {
     const lista = document.getElementById('lista-negocios');
+    const negocios = database.negocios || [];
     lista.innerHTML = '<h5>Negocios Registrados</h5>' + 
-        database.negocios.map(negocio => `
+        negocios.map(negocio => `
             <div class="card mb-2">
                 <h6>${negocio.nombre} - ${negocio.direccion}</h6>
                 <p>Precio domicilio: Q${negocio.precioDomicilio}</p>
                 <h6>Productos:</h6>
-                <ul>${negocio.productos.map(p => `<li>${p.nombre} - Q${p.precio} (${p.categoria}) - Stock: ${p.stock}</li>`).join('')}</ul>
+                <ul>${(negocio.productos || []).map(p => `<li>${p.nombre} - Q${p.precio} (${p.categoria}) - Stock: ${p.stock}</li>`).join('')}</ul>
             </div>
         `).join('');
 }
