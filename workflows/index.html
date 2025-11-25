@@ -1,1 +1,4516 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noticias Locales de Guantánamo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#8B0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Guasitos">
+    <meta name="description" content="Noticias locales y comercios de Guantánamo">
+    <meta name="keywords" content="guantánamo, noticias, cuba, comercios, negocios">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icons/icon-32x32.png">
+    
+    <style>
+        /* ==================== VARIABLES CSS ==================== */
+        :root {
+            --primary: #8B0000;
+            --primary-light: #A52A2A;
+            --primary-dark: #670000;
+            --secondary: #FFD700;
+            --accent: #FFFFFF;
+            --background: #F5F5F5;
+            --surface: #FFFFFF;
+            --surface-light: #FAFAFA;
+            --text-primary: #2D2D2D;
+            --text-secondary: #696969;
+            --text-muted: #A9A9A9;
+            --border: #D3D3D3;
+            --border-light: #E8E8E8;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
+        /* ==================== ESTILOS BASE ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ==================== PANTALLA DE CARGA ==================== */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ==================== INDICADOR DE CONEXIÓN MEJORADO ==================== */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            border: 1px solid;
+            transition: var(--transition);
+        }
+
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            border-color: #F44336;
+        }
+
+        .connection-status.error {
+            background: rgba(255, 152, 0, 0.9);
+            color: white;
+            border-color: #FF9800;
+        }
+
+        /* ==================== ESTRUCTURA PRINCIPAL ==================== */
+        .app-container {
+            display: grid;
+            grid-template-columns: minmax(280px, 320px) 1fr;
+            grid-template-areas: "sidebar main";
+            gap: 1.5rem;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        /* ==================== BARRA LATERAL ==================== */
+        .sidebar {
+            grid-area: sidebar;
+            position: sticky;
+            top: 1rem;
+            height: calc(100vh - 2rem);
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 1rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(8px);
+            margin-bottom: 1.5rem;
+        }
+
+        .user-menu:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            color: var(--accent);
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .user-role {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .nav-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .nav-section-title {
+            color: var(--secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.8rem;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            border-radius: var(--radius);
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--secondary);
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: var(--secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        /* ==================== CONTENIDO PRINCIPAL ==================== */
+        .main-content {
+            grid-area: main;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--accent);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            opacity: 0.95;
+            max-width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ==================== SECCIONES DE CONTENIDO ==================== */
+        .content-section {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        .section-header {
+            padding: 1.5rem 1.5rem 0.75rem;
+            text-align: center;
+            background: linear-gradient(135deg, var(--surface-light), var(--surface));
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .section-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ==================== SCROLL HORIZONTAL CON BOTONES ==================== */
+        .scroll-container {
+            position: relative;
+            padding: 0 3rem;
+        }
+
+        .scroll-content {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .scroll-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            z-index: 10;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .scroll-btn:hover {
+            background: var(--primary-light);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .scroll-btn.left {
+            left: 10px;
+        }
+
+        .scroll-btn.right {
+            right: 10px;
+        }
+
+        .scroll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: translateY(-50%) scale(1);
+        }
+
+        /* ==================== GRIDS Y CARDS ==================== */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-width: 280px;
+            flex-shrink: 0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--surface-light), var(--border));
+        }
+
+        .card-content {
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 0.75rem;
+            flex: 1;
+        }
+
+        /* ==================== PRODUCTOS MEJORADOS ==================== */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .product-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--border-light);
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            flex: 1;
+        }
+
+        .product-price {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .product-vendor {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin-bottom: 0.75rem;
+            background: var(--surface-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        /* ==================== RATING STARS MEJORADO ==================== */
+        .rating-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0.75rem 0;
+            padding: 0.5rem 0;
+            border-top: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 2px;
+        }
+
+        .star {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .star:hover {
+            transform: scale(1.2);
+            color: var(--secondary);
+        }
+
+        .star.active {
+            color: var(--secondary);
+        }
+
+        .star.rated {
+            color: var(--secondary);
+        }
+
+        .rating-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--surface-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius);
+        }
+
+        .rating-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .rating-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+        }
+
+        /* ==================== BOTONES DE INTERACCIÓN ==================== */
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        .action-btn:hover {
+            background: var(--surface-light);
+            color: var(--primary);
+        }
+
+        .action-btn.active {
+            color: var(--primary);
+        }
+
+        .action-btn.liked {
+            color: #e74c3c;
+        }
+
+        .action-count {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ==================== BOTONES Y FORMULARIOS ==================== */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(139, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #e6c200;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: var(--text-primary);
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            background: var(--surface-light);
+            transition: var(--transition);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+
+        /* ==================== PREVIEW DE IMÁGENES MEJORADO ==================== */
+        .image-preview {
+            width: 100%;
+            min-height: 120px;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: var(--surface-light);
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            position: relative;
+        }
+
+        .image-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            border: 2px solid var(--border-light);
+        }
+
+        .image-preview-text {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .image-source-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .image-source-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .image-source-btn:hover {
+            background: var(--surface-light);
+            border-color: var(--primary);
+        }
+
+        .image-source-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ==================== MODALES ==================== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 1002;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            max-width: 95%;
+            width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-light);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--surface-light), var(--surface));
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.25rem;
+        }
+
+        .modal-footer {
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            gap: 0.6rem;
+            justify-content: flex-end;
+            background: var(--surface-light);
+            border-radius: 0 0 var(--radius) var(--radius);
+        }
+
+        /* ==================== NOTIFICACIONES ==================== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 0.8rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            transition: var(--transition);
+            z-index: 1003;
+            max-width: 350px;
+            border: 1px solid var(--border-light);
+        }
+
+        .notification.active {
+            transform: translateX(0);
+        }
+
+        .notification.realtime {
+            border-left: 4px solid var(--secondary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+
+        /* ==================== BOTÓN MENÚ MÓVIL ==================== */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: var(--primary);
+            border: none;
+            color: var(--accent);
+            font-size: 1.3rem;
+            padding: 0.6rem;
+            border-radius: var(--radius);
+            z-index: 1001;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        /* ==================== BADGES DE ESTADO ==================== */
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.out-of-stock {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* ==================== BOTONES DE ACCIÓN RÁPIDA ==================== */
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex: 1;
+            min-width: 0;
+            justify-content: center;
+        }
+
+        .quick-action-btn.small {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+        }
+
+        /* ==================== RESPONSIVE DESIGN ==================== */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-areas: "main";
+                padding: 0.5rem;
+                gap: 0;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transition: var(--transition);
+                padding: 1.5rem 1rem;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .main-content {
+                padding: 0;
+                width: 100%;
+            }
+            
+            .hero {
+                padding: 1.5rem 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .hero-title {
+                font-size: 1.5rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+                gap: 1.25rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+                padding: 0.5rem;
+                gap: 0.75rem;
+            }
+            
+            .scroll-container {
+                padding: 0 2rem;
+            }
+            
+            .scroll-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            
+            .scroll-btn.left {
+                left: 5px;
+            }
+            
+            .scroll-btn.right {
+                right: 5px;
+            }
+            
+            .section-header {
+                padding: 1.25rem 1rem 0.5rem;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .quick-action-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 1.25rem 0.8rem;
+            }
+            
+            .hero-title {
+                font-size: 1.3rem;
+            }
+            
+            .section-header {
+                padding: 1rem 0.8rem 0.5rem;
+            }
+            
+            .section-title {
+                font-size: 1.2rem;
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            .modal-footer {
+                padding: 1rem;
+                flex-direction: column;
+            }
+            
+            .scroll-container {
+                padding: 0 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de carga -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <h2 style="color: var(--accent); margin-bottom: 10px;">Noticias Guantánamo</h2>
+        <p style="color: rgba(255, 255, 255, 0.8);">Conectando con el servidor...</p>
+    </div>
+
+    <!-- Indicador de conexión mejorado -->
+    <div id="connectionStatus" class="connection-status disconnected">Desconectado</div>
+
+    <!-- Botón menú móvil -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Contenedor principal -->
+    <div class="app-container">
+        <!-- Barra lateral -->
+        <aside class="sidebar" id="sidebar">
+            <a href="#" class="logo">
+                <span class="logo-icon">🌴</span>
+                Guantánamo
+            </a>
+
+            <!-- Información de usuario -->
+            <div class="user-menu" id="userMenu">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Invitado</div>
+                    <div class="user-role" id="userRole">No logueado</div>
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+
+            <!-- Navegación principal -->
+            <div class="nav-section">
+                <div class="nav-section-title">Contenido Principal</div>
+                <nav class="nav-links">
+                    <a href="#best-rated" class="nav-link active" data-section="bestRatedSection">
+                        <i class="fas fa-crown"></i> Mejor Calificados
+                    </a>
+                    <a href="#urgentes" class="nav-link" data-section="urgentesSection">
+                        <i class="fas fa-exclamation-circle"></i> Noticias Urgentes
+                    </a>
+                    <a href="#zonas" class="nav-link" data-section="zonasSection">
+                        <i class="fas fa-store"></i> Negocios y Zonas
+                    </a>
+                    <a href="#zonitas" class="nav-link" data-section="zonitasSection">
+                        <i class="fas fa-user-tie"></i> Zonitas
+                    </a>
+                    <a href="#intercambios" class="nav-link" data-section="intercambiosSection">
+                        <i class="fas fa-exchange-alt"></i> Intercambios
+                    </a>
+                    <a href="#propiedades" class="nav-link" data-section="propiedadesSection">
+                        <i class="fas fa-home"></i> Ventas y Permutas
+                    </a>
+                    <a href="#mis-publicaciones" class="nav-link" data-section="misPublicacionesSection">
+                        <i class="fas fa-user-circle"></i> Mis Publicaciones
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Navegación de gestión -->
+            <div class="nav-section">
+                <div class="nav-section-title">Gestión</div>
+                <nav class="nav-links">
+                    <a href="#" class="nav-link" data-modal="uploadModal">
+                        <i class="fas fa-upload"></i> Subir Noticia
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addZoneModal">
+                        <i class="fas fa-plus-circle"></i> Nuevo Negocio
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addZonitaModal">
+                        <i class="fas fa-plus-circle"></i> Nueva Zonita
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addProductZoneModal">
+                        <i class="fas fa-cart-plus"></i> Producto a Negocio
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addProductZonitaModal">
+                        <i class="fas fa-cart-plus"></i> Producto a Zonita
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addExchangeModal">
+                        <i class="fas fa-exchange-alt"></i> Nuevo Intercambio
+                    </a>
+                    <a href="#" class="nav-link" data-modal="addPropertyModal">
+                        <i class="fas fa-home"></i> Nueva Propiedad
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Navegación de ayuda -->
+            <div class="nav-section" style="margin-top: auto;">
+                <nav class="nav-links">
+                    <a href="#" class="nav-link" data-modal="helpModal">
+                        <i class="fas fa-question-circle"></i> Ayuda
+                    </a>
+                    <a href="#" class="nav-link" data-modal="supportModal">
+                        <i class="fas fa-heart"></i> Apoyar la Plataforma
+                    </a>
+                </nav>
+            </div>
+
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="main-content" id="mainContent">
+            <!-- Hero Section -->
+            <section class="hero" id="hero">
+                <h1 class="hero-title">Noticias Locales de Guantánamo</h1>
+                <p class="hero-subtitle">
+                    Mantente al día con el acontecer semanal. Comparte noticias, evalúa productos y descubre los mejores negocios y zonitas.
+                </p>
+            </section>
+
+            <!-- Sección de Mejor Calificados -->
+            <section class="content-section" id="bestRatedSection">
+                <div class="section-header">
+                    <h2 class="section-title">⭐ Lo Mejor de Guantánamo</h2>
+                    <p class="section-subtitle">Productos y servicios con las mejores calificaciones de la comunidad</p>
+                </div>
+                <div class="products-grid" id="bestRatedGrid">
+                    <!-- Los productos mejor calificados se cargarán aquí -->
+                </div>
+            </section>
+
+            <!-- Sección de Noticias Urgentes -->
+            <section class="content-section" id="urgentesSection">
+                <div class="section-header">
+                    <h2 class="section-title">Noticias Urgentes</h2>
+                    <p class="section-subtitle">Últimas novedades y eventos críticos de la comunidad</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('urgentesGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="urgentesGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('urgentesGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sección de Negocios y Zonas -->
+            <section class="content-section" id="zonasSection">
+                <div class="section-header">
+                    <h2 class="section-title">Negocios y Zonas Calientes</h2>
+                    <p class="section-subtitle">Principales negocios con productos, precios y calidad verificada</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('zonasGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="zonasGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('zonasGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sección de Zonitas -->
+            <section class="content-section" id="zonitasSection">
+                <div class="section-header">
+                    <h2 class="section-title">Zonitas: Pequeños Emprendedores</h2>
+                    <p class="section-subtitle">Apoya a vendedores independientes con productos y servicios para subsistir</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('zonitasGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="zonitasGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('zonitasGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sección de Intercambios -->
+            <section class="content-section" id="intercambiosSection">
+                <div class="section-header">
+                    <h2 class="section-title">Intercambios Directos</h2>
+                    <p class="section-subtitle">Intercambia productos y servicios directamente con otros usuarios</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('intercambiosGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="intercambiosGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('intercambiosGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sección de Propiedades -->
+            <section class="content-section" id="propiedadesSection">
+                <div class="section-header">
+                    <h2 class="section-title">Ventas y Permutas de Casas</h2>
+                    <p class="section-subtitle">Encuentra oportunidades de vivienda en Guantánamo</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('propiedadesGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="propiedadesGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('propiedadesGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Nueva Sección: Mis Publicaciones -->
+            <section class="content-section" id="misPublicacionesSection">
+                <div class="section-header">
+                    <h2 class="section-title">Mis Publicaciones</h2>
+                    <p class="section-subtitle">Gestiona todas tus publicaciones en un solo lugar</p>
+                </div>
+                <div class="scroll-container">
+                    <button class="scroll-btn left" onclick="scrollSection('misPublicacionesGrid', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="scroll-content" id="misPublicacionesGrid"></div>
+                    <button class="scroll-btn right" onclick="scrollSection('misPublicacionesGrid', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Overlay para modales -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Modal de Login -->
+    <div class="modal" id="loginModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Iniciar Sesión</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('loginModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Usuario</label>
+                <input type="text" class="form-input" id="loginUsername" placeholder="Tu nombre de usuario">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <small style="color: var(--text-muted);">¿No tienes cuenta? <a href="#" onclick="showModal(document.getElementById('registerModal')); hideModal(document.getElementById('loginModal'))" style="color: var(--primary);">Regístrate aquí</a></small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="loginBtn">Iniciar Sesión</button>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div class="modal" id="registerModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Crear Cuenta</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('registerModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Nombre Completo</label>
+                <input type="text" class="form-input" id="registerName" placeholder="Tu nombre completo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Usuario</label>
+                <input type="text" class="form-input" id="registerUsername" placeholder="Elige un nombre de usuario">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Teléfono de Contacto</label>
+                <input type="text" class="form-input" id="registerPhone" placeholder="+53 12345678">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-input" id="registerPassword" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirmar Contraseña</label>
+                <input type="password" class="form-input" id="registerConfirmPassword" placeholder="••••••••">
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <small style="color: var(--text-muted);">¿Ya tienes cuenta? <a href="#" onclick="showModal(document.getElementById('loginModal')); hideModal(document.getElementById('registerModal'))" style="color: var(--primary);">Inicia sesión aquí</a></small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="registerBtn">Crear Cuenta</button>
+        </div>
+    </div>
+
+    <!-- Modal de Subir Noticia -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Subir Noticia</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('uploadModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Comparte actualizaciones importantes con la comunidad</p>
+            <div class="upload-form">
+                <div class="form-group">
+                    <label class="form-label">Título</label>
+                    <input type="text" class="form-input" id="uploadTitle" placeholder="Título de la noticia">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contenido</label>
+                    <textarea class="form-textarea" id="uploadContent" rows="4" placeholder="Describe la noticia..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen (opcional)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('uploadImage', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('uploadImage', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="uploadImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="uploadImage" capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="uploadBtn">Publicar Noticia</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Negocio -->
+    <div class="modal" id="addZoneModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Nuevo Negocio</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addZoneModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Crea un nuevo negocio para la comunidad</p>
+            <div class="add-zone-form">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Negocio</label>
+                    <input type="text" class="form-input" id="zoneBusinessName" placeholder="Ej. Mercado 7 Sur">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-textarea" id="zoneDescription" rows="4" placeholder="Ubicación o detalles del negocio..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono de Contacto</label>
+                    <input type="text" class="form-input" id="zonePhone" placeholder="+53 12345678">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen (opcional)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('zoneImage', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('zoneImage', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="zoneImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="zoneImage" capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addZoneBtn">Crear Negocio</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Zonita -->
+    <div class="modal" id="addZonitaModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Nueva Zonita</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addZonitaModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Registra un nuevo emprendedor independiente</p>
+            <div class="add-zone-form">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Zonita</label>
+                    <input type="text" class="form-input" id="zonitaBusinessName" placeholder="Ej. Juan el Reparador">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-textarea" id="zonitaDescription" rows="4" placeholder="Ubicación o detalles del emprendedor..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono de Contacto</label>
+                    <input type="text" class="form-input" id="zonitaPhone" placeholder="+53 12345678">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen (opcional)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('zonitaImage', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('zonitaImage', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="zonitaImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="zonitaImage" capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addZonitaBtn">Crear Zonita</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Producto a Negocio -->
+    <div class="modal" id="addProductZoneModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Producto a Negocio</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addProductZoneModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Asocia un producto a un negocio existente</p>
+            <div class="add-product-zone-form">
+                <div class="form-group">
+                    <label class="form-label">Seleccionar Negocio</label>
+                    <select class="form-select" id="zoneSelect">
+                        <option value="">Selecciona un negocio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Producto</label>
+                    <input type="text" class="form-input" id="productZoneName" placeholder="Ej. Plátanos Maduros">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Precio</label>
+                    <input type="text" class="form-input" id="productZonePrice" placeholder="Ej. 15 CUP">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen (opcional)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('productZoneImage', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('productZoneImage', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="productZoneImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="productZoneImage" capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addProductZoneBtn">Agregar Producto</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Producto a Zonita -->
+    <div class="modal" id="addProductZonitaModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Producto a Zonita</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addProductZonitaModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Asocia un producto a un emprendedor existente</p>
+            <div class="add-product-zone-form">
+                <div class="form-group">
+                    <label class="form-label">Seleccionar Zonita</label>
+                    <select class="form-select" id="zonitaSelect">
+                        <option value="">Selecciona una zonita</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Producto</label>
+                    <input type="text" class="form-input" id="productZonitaName" placeholder="Ej. Reparación de Calzado">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Precio</label>
+                    <input type="text" class="form-input" id="productZonitaPrice" placeholder="Ej. 50 CUP">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen (opcional)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('productZonitaImage', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('productZonitaImage', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="productZonitaImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="productZonitaImage" capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addProductZonitaBtn">Agregar Producto</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Intercambio -->
+    <div class="modal" id="addExchangeModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Crear Nuevo Intercambio</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addExchangeModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Ofrece lo que tienes y especifica lo que buscas a cambio</p>
+            <div class="add-exchange-form">
+                <div class="form-group">
+                    <label class="form-label">Título del Intercambio</label>
+                    <input type="text" class="form-input" id="exchangeTitle" placeholder="Ej: Intercambio bicicleta por herramientas">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lo que ofrezco</label>
+                    <textarea class="form-textarea" id="exchangeOffer" rows="3" placeholder="Describe detalladamente lo que ofreces..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lo que busco</label>
+                    <textarea class="form-textarea" id="exchangeRequest" rows="3" placeholder="Describe lo que esperas recibir a cambio..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lugar de encuentro sugerido</label>
+                    <input type="text" class="form-input" id="exchangeLocation" placeholder="Ej: Parque Central, 10:00 AM">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imágenes de lo que ofrezco (máx. 3)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('exchangeImages', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('exchangeImages', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="exchangeImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-images fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona imágenes</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="exchangeImages" multiple capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addExchangeBtn">Crear Intercambio</button>
+        </div>
+    </div>
+
+    <!-- Modal de Agregar Propiedad -->
+    <div class="modal" id="addPropertyModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Publicar Propiedad</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('addPropertyModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="section-subtitle">Comparte los detalles de tu propiedad para venta o permuta</p>
+            <div class="add-property-form">
+                <div class="form-group">
+                    <label class="form-label">Título de la publicación</label>
+                    <input type="text" class="form-input" id="propertyTitle" placeholder="Ej: Casa en centro, 3 habitaciones">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tipo de operación</label>
+                    <select class="form-select" id="propertyType">
+                        <option value="venta">Venta</option>
+                        <option value="permuta">Permuta</option>
+                        <option value="ambas">Venta o Permuta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ubicación</label>
+                    <input type="text" class="form-input" id="propertyLocation" placeholder="Dirección exacta o zona">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-textarea" id="propertyDescription" rows="4" placeholder="Describe la propiedad, número de habitaciones, baños, estado..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Precio (si es venta)</label>
+                    <input type="text" class="form-input" id="propertyPrice" placeholder="Ej: 50,000 CUP o Negociable">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lo que busco en permuta (si aplica)</label>
+                    <textarea class="form-textarea" id="propertyExchange" rows="3" placeholder="Describe lo que aceptarías en permuta..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imágenes de la propiedad (máx. 5)</label>
+                    <div class="image-source-buttons">
+                        <button type="button" class="image-source-btn" data-source="camera" onclick="setImageSource('propertyImages', 'camera')">
+                            <i class="fas fa-camera"></i> Cámara
+                        </button>
+                        <button type="button" class="image-source-btn active" data-source="gallery" onclick="setImageSource('propertyImages', 'gallery')">
+                            <i class="fas fa-images"></i> Galería
+                        </button>
+                    </div>
+                    <div class="image-preview" id="propertyImagePreview">
+                        <div class="image-preview-text">
+                            <i class="fas fa-images fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona imágenes</div>
+                        </div>
+                    </div>
+                    <input type="file" accept="image/*" id="propertyImages" multiple capture="environment">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="addPropertyBtn">Publicar Propiedad</button>
+        </div>
+    </div>
+
+    <!-- Modal de Ayuda -->
+    <div class="modal" id="helpModal">
+        <div class="modal-header">
+            <h3 class="modal-title">Guía de Uso</h3>
+            <button class="close-modal" onclick="hideModal(document.getElementById('helpModal'))">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+         <div class="modal-body">
+        <div class="help-content">
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="color: var(--primary); margin-bottom: 0.5rem;">🌴 Bienvenido a tu comunidad digital</h4>
+                <p style="color: var(--text-secondary);">Conectamos a guantanameros a través de noticias, comercios y oportunidades reales.</p>
+            </div>
+
+            <div class="manual-section" style="margin-bottom: 1.5rem;">
+                <h5 style="color: var(--primary); margin-bottom: 0.5rem;">📱 ¿Cómo navegar?</h5>
+                <div style="background: var(--surface-light); padding: 1rem; border-radius: var(--radius);">
+                    <div style="display: flex; align-items: start; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0;">1</div>
+                        <div>
+                            <strong>Explora secciones:</strong> Desliza horizontalmente en cada categoría para descubrir contenido
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: start; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0;">2</div>
+                        <div>
+                            <strong>Califica productos:</strong> Toca las estrellas para ayudar a la comunidad a identificar calidad
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: start; gap: 0.75rem;">
+                        <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0;">3</div>
+                        <div>
+                            <strong>Interactúa:</strong> Da likes y vistas a noticias que consideres importantes
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="manual-section" style="margin-bottom: 1.5rem;">
+                <h5 style="color: var(--primary); margin-bottom: 0.5rem;">💼 ¿Qué puedes hacer?</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div style="background: var(--surface-light); padding: 0.75rem; border-radius: var(--radius); text-align: center;">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📰</div>
+                        <div style="font-size: 0.85rem; font-weight: 600;">Publicar Noticias</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Comparte información relevante</div>
+                    </div>
+                    <div style="background: var(--surface-light); padding: 0.75rem; border-radius: var(--radius); text-align: center;">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🏪</div>
+                        <div style="font-size: 0.85rem; font-weight: 600;">Registrar Negocios</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Muestra tu emprendimiento</div>
+                    </div>
+                    <div style="background: var(--surface-light); padding: 0.75rem; border-radius: var(--radius); text-align: center;">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">👨‍🔧</div>
+                        <div style="font-size: 0.85rem; font-weight: 600;">Ofrecer Servicios</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Como zonita independiente</div>
+                    </div>
+                    <div style="background: var(--surface-light); padding: 0.75rem; border-radius: var(--radius); text-align: center;">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔄</div>
+                        <div style="font-size: 0.85rem; font-weight: 600;">Intercambiar</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Trueque sin dinero</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="manual-section" style="margin-bottom: 1.5rem;">
+                <h5 style="color: var(--primary); margin-bottom: 0.5rem;">⭐ Sistema de Calificación ERE</h5>
+                <div style="background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; padding: 1rem; border-radius: var(--radius);">
+                    <p style="margin-bottom: 0.5rem; font-size: 0.9rem;"><strong>Tu opinión construye confianza comunitaria</strong></p>
+                    <p style="font-size: 0.8rem; opacity: 0.9;">
+                        Cada calificación que das ayuda a otros guantanameros a tomar mejores decisiones. 
+                        Juntos transformamos limitaciones en oportunidades transparentes.
+                    </p>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                    <strong>Estado de conexión:</strong> 
+                    <span id="connectionStatusText" style="color: var(--primary);">Verificando...</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" onclick="hideModal(document.getElementById('helpModal'))">
+            <i class="fas fa-check"></i> Entendido
+        </button>
+    </div>
+    </div>
+
+    <!-- Modal de Apoyo -->
+<div class="modal" id="supportModal">
+    <div class="modal-header">
+        <h3 class="modal-title">Crecimiento Compartido</h3>
+        <button class="close-modal" onclick="hideModal(document.getElementById('supportModal'))">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="support-content">
+            <!-- Mensaje ERE - Economía de las Restricciones Emocionales -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🤝</div>
+                <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Transformemos Juntos las Limitaciones</h4>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Cada restricción que superamos nos hace más fuertes como comunidad
+                </p>
+            </div>
+
+            <div style="background: var(--surface-light); padding: 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="background: var(--secondary); color: var(--text-primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div>
+                        <h5 style="color: var(--primary); margin-bottom: 0.25rem;">Tu Confianza es Nuestro Mayor Recurso</h5>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">
+                            En un mundo de recursos limitados, hemos elegido hacer visible lo que otros ocultan: 
+                            <strong>nuestra autenticidad es nuestra mayor ventaja.</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                        <i class="fas fa-seedling"></i>
+                    </div>
+                    <div>
+                        <h5 style="color: var(--primary); margin-bottom: 0.25rem;">Invierte en Crecimiento Auténtico</h5>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">
+                            Tu apoyo no es una donación, es una <strong>co-inversión emocional</strong> en una plataforma 
+                            que prioriza personas sobre algoritmos, comunidad sobre corporaciones.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Apoyo - Diseñada con ERE -->
+            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 1.5rem; border-radius: var(--radius); text-align: center;">
+                <div style="margin-bottom: 1rem;">
+                    <h5 style="margin-bottom: 0.5rem; opacity: 0.9;">Tu Apoyo Hace la Diferencia</h5>
+                    <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem;">
+                        Con cada contribución, no solo mantienes los servidores funcionando, 
+                        sino que <strong>validas un modelo donde las restricciones se convierten en conexiones humanas.</strong>
+                    </p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
+                    <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 0.5rem;">Para transferencias directas:</div>
+                    <div style="font-family: monospace; font-size: 1.1rem; font-weight: 600; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                        9204 0699 9513 9326
+                    </div>
+                    <div style="font-size: 0.8rem; opacity: 0.8;">
+                        Confirmación: <strong>+5350937508</strong>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.75rem; opacity: 0.7;">
+                    <i class="fas fa-shield-alt" style="margin-right: 0.5rem;"></i>
+                    Transparencia total - Sabes exactamente dónde va tu apoyo
+                </div>
+            </div>
+
+            <!-- Cierre ERE -->
+            <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+                <p style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+                    "El futuro de Guantánamo digital no está en ocultar limitaciones, 
+                    sino en convertirlas en historias que como comunidad queremos escribir juntos"
+                </p>
+                <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 0.75rem;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                        <strong>Escribe, envia tus sugerencias con el asunto "Sugerencias"</strong><br>
+                        lhmolam@gmail.com
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" onclick="hideModal(document.getElementById('supportModal'))" style="background: var(--secondary); color: var(--text-primary); border: none;">
+            <i class="fas fa-hands-helping"></i> Continuar Construyendo Juntos
+        </button>
+    </div>
+</div>
+
+    <!-- Contenedor de notificaciones -->
+    <div id="notificationsContainer"></div>
+
+    <script>
+        // ==================== CONFIGURACIÓN ====================
+        const WORKER_BASE_URL = 'https://guasitos-worker.lhmolam-877.workers.dev';
+
+        // Estado global de la aplicación
+        const state = {
+            currentUser: null,
+            users: [],
+            urgentes: [],
+            zonas: [],
+            zonitas: [],
+            intercambios: [],
+            propiedades: [],
+            products: [],
+            lastSync: null,
+            wsManager: null,
+            userLikes: new Set(),
+            userViews: new Set(),
+            userRatings: new Map() // Almacena ratings por producto: {productId: rating}
+        };
+
+        // ==================== GESTIÓN DE WEBSOCKET ====================
+
+        
+class WebSocketManager {
+    constructor() {
+        this.socket = null;
+        this.isConnected = false;
+        this.isAuthenticated = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 2000;
+        this.messageHandlers = new Map();
+        this.pendingAuthentication = false;
+    }
+
+    /**
+     * Obtiene la URL del WebSocket
+     */
+    getWebSocketUrl() {
+        const productionUrl = 'wss://guasitos-worker.lhmolam-877.workers.dev/ws';
+        
+        if (window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1') {
+            return 'ws://localhost:8787/ws';
+        }
+        
+        return productionUrl;
+    }
+
+    /**
+     * Conecta al WebSocket
+     */
+async connect() {
+    return new Promise((resolve, reject) => {
+        // Probar diferentes URLs
+        const possibleUrls = [
+            'wss://guasitos-worker.lhmolam-877.workers.dev/ws',
+            'ws://localhost:8787/ws'
+        ];
+        
+        let currentUrlIndex = 0;
+        
+        const tryConnect = (urlIndex) => {
+            if (urlIndex >= possibleUrls.length) {
+                reject(new Error('No se pudo conectar a ninguna URL'));
+                return;
+            }
+            
+            const wsUrl = possibleUrls[urlIndex];
+            console.log(`🔌 Intentando conectar a: ${wsUrl}`);
+            
+            try {
+                this.socket = new WebSocket(wsUrl);
+                
+                this.socket.onopen = () => {
+                    console.log(`✅ Conectado a: ${wsUrl}`);
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+                    this.updateConnectionStatus('connected');
+                    
+                    this.send({ type: 'subscribe_updates' });
+                    
+                    if (state.currentUser?.session_token) {
+                        this.authenticate(state.currentUser.session_token);
+                    }
+                    
+                    resolve();
+                };
+                
+                this.socket.onerror = () => {
+                    console.log(`❌ Falló: ${wsUrl}`);
+                    currentUrlIndex++;
+                    tryConnect(currentUrlIndex);
+                };
+                
+                this.socket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleMessage(data);
+                    } catch (error) {
+                        console.error('❌ Error parseando mensaje:', error);
+                    }
+                };
+                
+                this.socket.onclose = (event) => {
+                    this.isConnected = false;
+                    this.updateConnectionStatus('disconnected');
+                    this.attemptReconnect();
+                };
+                
+            } catch (error) {
+                console.error(`❌ Error con ${wsUrl}:`, error);
+                currentUrlIndex++;
+                tryConnect(currentUrlIndex);
+            }
+        };
+        
+        tryConnect(0);
+    });
+}
+    /**
+     * Autentica el WebSocket con el session token
+     */
+    authenticate(sessionToken) {
+        if (!this.isConnected || !this.socket) {
+            console.log('❌ WebSocket no conectado, no se puede autenticar');
+            return false;
+        }
+        
+        console.log('🔐 Autenticando WebSocket...');
+        this.pendingAuthentication = true;
+        
+        this.send({
+            type: 'authenticate',
+            session_token: sessionToken
+        });
+        
+        return true;
+    }
+
+    /**
+     * Maneja mensajes recibidos
+     */
+    handleMessage(data) {
+    console.log('📨 MENSAJE WEBSOCKET RECIBIDO:', {
+        type: data.type,
+        operation: data.operation,
+        timestamp: data.timestamp,
+        source: data.source
+    });
+
+    // Ejecutar handlers específicos
+    if (this.messageHandlers.has(data.type)) {
+        console.log(`   🎯 Ejecutando ${this.messageHandlers.get(data.type).length} handlers para ${data.type}`);
+        this.messageHandlers.get(data.type).forEach((handler, index) => {
+            try {
+                console.log(`   🔧 Ejecutando handler ${index + 1}...`);
+                handler(data);
+                console.log(`   ✅ Handler ${index + 1} completado`);
+            } catch (error) {
+                console.error(`   ❌ Error en handler ${index + 1}:`, error);
+            }
+        });
+    } else {
+        console.log(`   ⚠️  No hay handlers registrados para: ${data.type}`);
+    }
+
+    switch (data.type) {
+        case 'data_updated':
+            console.log('🔄 EVENTO DATA_UPDATED RECIBIDO:', data.operation);
+            this.handleDataUpdate(data);
+            break;
+            
+        case 'authenticated':
+            console.log('✅ AUTENTICACIÓN EXITOSA:', data.user.name);
+            this.isAuthenticated = true;
+            this.pendingAuthentication = false;
+            break;
+            
+        case 'subscribed':
+            console.log('✅ SUSCRIPCIÓN CONFIRMADA:', data.message);
+            break;
+            
+        case 'pong':
+            console.log('🏓 PONG recibido');
+            break;
+            
+        default:
+            console.log('❓ MENSAJE NO MANEJADO:', data.type);
+    }
+}
+
+    /**
+     * Maneja actualizaciones de datos
+     */
+    /**
+ * Maneja actualizaciones de datos - VERSIÓN MEJORADA
+ */
+/**
+ * Maneja actualizaciones de datos - VERSIÓN MEJORADA CON ACTUALIZACIÓN INMEDIATA
+ */
+handleDataUpdate(data) {
+    // PROTECCIÓN: No procesar actualizaciones durante operaciones críticas
+    if (this.isProcessingCriticalOperation) {
+        console.log('🚫 Actualización ignorada durante operación crítica');
+        return;
+    }
+    
+    console.log('🔄 ACTUALIZACIÓN AUTOMÁTICA DETECTADA:', {
+        operation: data.operation,
+        entity: data.entity,
+        source: data.source
+    });
+    
+    // TIMER SEGURO: Esperar 300ms para asegurar estabilidad
+    setTimeout(() => {
+        this.showRealtimeNotification(
+            'Actualización en Tiempo Real', 
+            data.message || `Nuevo ${data.entity} agregado`,
+            'info'
+        );
+        
+        // TIMER SEGURO: Recarga después de 500ms
+        setTimeout(async () => {
+            try {
+                await loadData(true);
+                renderAllSections();
+                console.log('✅ VISTA ACTUALIZADA AUTOMÁTICAMENTE');
+            } catch (error) {
+                console.error('❌ ERROR EN ACTUALIZACIÓN AUTOMÁTICA:', error);
+            }
+        }, 500);
+    }, 300);
+}
+
+
+    /**
+     * Maneja notificaciones específicas del usuario
+     */
+    handleUserNotification(data) {
+        this.showRealtimeNotification(
+            data.title || 'Notificación',
+            data.message,
+            data.type || 'info'
+        );
+        
+        // Recargar datos si es necesario
+        if (data.refresh_data) {
+            this.refreshData();
+        }
+    }
+
+    /**
+     * Refresca los datos
+     */
+    async refreshData() {
+        try {
+            console.log('🔄 Recargando datos por actualización WebSocket...');
+            
+            // Forzar recarga desde el servidor
+            await loadData(true);
+            
+            // Re-renderizar TODAS las secciones
+            renderAllSections();
+            
+            console.log('✅ Datos actualizados automáticamente via WebSocket');
+            
+        } catch (error) {
+            console.error('❌ Error recargando datos:', error);
+        }
+    }
+
+    /**
+     * Envía un mensaje por WebSocket
+     */
+    send(data) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(data));
+            return true;
+        } else {
+            console.warn('⚠️ WebSocket no está conectado, no se puede enviar mensaje');
+            return false;
+        }
+    }
+    
+
+    /**
+ * Notifica una actualización de datos al servidor
+ */
+    notifyDataUpdate(entity = 'all') {
+    if (this.isConnected && this.isAuthenticated) {
+        return this.send({
+            type: 'data_updated',
+            entity: entity,
+            timestamp: new Date().toISOString(),
+            source: 'client_update',
+            userId: state.currentUser?.id // Incluir ID del usuario
+        });
+    } else {
+        console.warn('⚠️ WebSocket no conectado o no autenticado, no se puede notificar actualización');
+        return false;
+    }
+}
+
+    /**
+     * Registra un handler para un tipo de mensaje
+     */
+    on(messageType, handler) {
+        if (!this.messageHandlers.has(messageType)) {
+            this.messageHandlers.set(messageType, []);
+        }
+        this.messageHandlers.get(messageType).push(handler);
+    }
+
+    /**
+     * Elimina un handler
+     */
+    off(messageType, handler) {
+        if (this.messageHandlers.has(messageType)) {
+            const handlers = this.messageHandlers.get(messageType);
+            const index = handlers.indexOf(handler);
+            if (index > -1) {
+                handlers.splice(index, 1);
+            }
+        }
+    }
+
+    /**
+     * Intenta reconectar
+     */
+    attemptReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        const delay = Math.min(this.reconnectDelay * Math.pow(1.8, this.reconnectAttempts - 1), 15000);
+        
+        console.log(`🔄 Reconectando en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        
+        this.updateConnectionStatus('reconnecting');
+        
+        setTimeout(() => {
+            console.log('🔌 Ejecutando reconexión...');
+            this.connect().then(() => {
+                console.log('✅ Reconexión exitosa');
+            }).catch(error => {
+                console.error('❌ Error en reconexión:', error);
+            });
+        }, delay);
+    } else {
+        console.error(`❌ Máximo de intentos de reconexión alcanzado (${this.maxReconnectAttempts})`);
+        this.updateConnectionStatus('error');
+        
+        // Opcional: permitir reconexión manual después de un tiempo
+        setTimeout(() => {
+            this.reconnectAttempts = 0;
+            console.log('🔄 Reiniciando contador de reconexiones');
+        }, 20000); // Reiniciar después de 1 minuto
+    }
+}
+
+    /**
+     * Actualiza el estado de conexión en la UI
+     */
+    updateConnectionStatus(status) {
+        const statusElement = document.getElementById('connectionStatus');
+        if (statusElement) {
+            const statusText = status === 'connected' ? 'EnLinea' : 
+                             status === 'disconnected' ? 'Desconectado' : 'Error';
+            
+            statusElement.textContent = statusText;
+            statusElement.className = `connection-status ${status}`;
+            
+            // Actualizar texto en modal de ayuda
+            const statusTextElement = document.getElementById('connectionStatusText');
+            if (statusTextElement) {
+                statusTextElement.textContent = statusText;
+            }
+        }
+    }
+
+    /**
+     * Muestra notificación en tiempo real
+     */
+    showRealtimeNotification(title, message, type) {
+        showNotification(title, message, type, 3000, true);
+    }
+
+
+    
+
+}
+
+        // ==================== FUNCIONES UTILITARIAS ====================
+
+        /**
+         * Obtiene un elemento del DOM por ID
+         */
+        function getElement(id) {
+            return document.getElementById(id);
+        }
+
+        /**
+         * Muestra una notificación al usuario
+         */
+        function showNotification(title, message, type = 'info', duration = 5000, realtime = false) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} ${realtime ? 'realtime' : ''}`;
+            notification.innerHTML = `
+                <div class="notification-icon">
+                    ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="close-notification">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            getElement('notificationsContainer').appendChild(notification);
+            
+            // Animación de entrada
+            requestAnimationFrame(() => {
+                notification.classList.add('active');
+            });
+            
+            // Botón de cierre
+            const closeBtn = notification.querySelector('.close-notification');
+            closeBtn.addEventListener('click', () => {
+                notification.classList.remove('active');
+                setTimeout(() => notification.remove(), 300);
+            });
+            
+            // Auto-eliminación
+            if (duration > 0) {
+                setTimeout(() => {
+                    notification.classList.remove('active');
+                    setTimeout(() => notification.remove(), 300);
+                }, duration);
+            }
+            
+            return notification;
+        }
+
+        /**
+         * Muestra un modal
+         */
+        function showModal(modal) {
+            if (!modal) return;
+            getElement('overlay').classList.add('active');
+            modal.classList.add('active');
+            
+            // Configurar selects dinámicos cuando se muestran modales específicos
+            if (modal.id === 'addProductZoneModal') {
+                updateZoneSelect();
+            } else if (modal.id === 'addProductZonitaModal') {
+                updateZonitaSelect();
+            }
+        }
+
+        /**
+         * Oculta un modal
+         */
+        function hideModal(modal) {
+            if (!modal) return;
+            getElement('overlay').classList.remove('active');
+            modal.classList.remove('active');
+        }
+
+        /**
+         * Oculta la pantalla de carga
+         */
+        function hideLoadingScreen() {
+            const loadingScreen = getElement('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        /**
+         * Configura la fuente de imagen (cámara o galería)
+         */
+        function setImageSource(inputId, source) {
+            const input = getElement(inputId);
+            const buttons = document.querySelectorAll(`[data-source][onclick*="${inputId}"]`);
+            
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-source') === source) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            if (source === 'camera') {
+                input.setAttribute('capture', 'environment');
+            } else {
+                input.removeAttribute('capture');
+            }
+        }
+
+        /**
+         * Convierte imagen a base64
+         */
+        function imageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('Error convirtiendo imagen a base64'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /**
+         * Comprime una imagen
+         */
+        async function compressImage(file, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                if (file.size < 50000) {
+                    resolve(file);
+                    return;
+                }
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    try {
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob(blob => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('No se pudo comprimir la imagen'));
+                            }
+                        }, 'image/jpeg', quality);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => reject(new Error('Error cargando la imagen'));
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        /**
+         * Configura preview de imágenes
+         */
+        function setupImagePreview(inputElement, previewElement) {
+            if (!inputElement || !previewElement) return;
+            
+            inputElement.addEventListener('change', async function(e) {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    previewElement.innerHTML = '';
+                    
+                    for (let i = 0; i < Math.min(files.length, 5); i++) {
+                        const file = files[i];
+                        
+                        try {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const img = document.createElement('img');
+                                img.src = e.target.result;
+                                img.style.maxWidth = '100px';
+                                img.style.maxHeight = '100px';
+                                img.style.objectFit = 'cover';
+                                img.style.margin = '2px';
+                                img.style.borderRadius = 'var(--radius)';
+                                previewElement.appendChild(img);
+                            };
+                            reader.readAsDataURL(file);
+                        } catch (error) {
+                            console.error('Error procesando imagen:', error);
+                        }
+                    }
+                } else {
+                    previewElement.innerHTML = `
+                        <div class="image-preview-text">
+                            <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                            <div>Selecciona una imagen</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        /**
+         * Actualiza el select de zonas
+         */
+        function updateZoneSelect() {
+            const zoneSelect = getElement('zoneSelect');
+            if (!zoneSelect) return;
+            
+            zoneSelect.innerHTML = '<option value="">Selecciona un negocio</option>';
+            state.zonas.forEach(zone => {
+                const option = document.createElement('option');
+                option.value = zone.id;
+                option.textContent = zone.business_name || zone.title;
+                zoneSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Actualiza el select de zonitas
+         */
+        function updateZonitaSelect() {
+            const zonitaSelect = getElement('zonitaSelect');
+            if (!zonitaSelect) return;
+            
+            zonitaSelect.innerHTML = '<option value="">Selecciona una zonita</option>';
+            state.zonitas.forEach(zonita => {
+                const option = document.createElement('option');
+                option.value = zonita.id;
+                option.textContent = zonita.business_name || zonita.title;
+                zonitaSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Función para scroll horizontal
+         */
+        function scrollSection(sectionId, amount) {
+            const section = getElement(sectionId);
+            if (section) {
+                section.scrollBy({ left: amount, behavior: 'smooth' });
+            }
+        }
+
+        // ==================== GESTIÓN DE DATOS ====================
+
+        /**
+         * Guarda datos en D1 via API
+         */
+        /**
+ * Guarda datos en D1 via API - VERSIÓN MEJORADA
+ */
+async function saveToD1(operation, data) {
+    console.log(`💾 Guardando en D1: ${operation}`, data);
+    
+    try {
+        const response = await fetch(`${WORKER_BASE_URL}/d1/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                operation: operation,
+                data: data,
+                session_token: state.currentUser?.session_token || 'test'
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Guardado en D1 exitoso');
+            
+            // TIMER SEGURO: Solo notificar después de una pausa mínima
+            setTimeout(() => {
+                if (state.wsManager && state.wsManager.isConnected) {
+                    const entity = operation.split('_')[1] || 'all';
+                    const notified = state.wsManager.notifyDataUpdate(entity);
+                    
+                    if (notified) {
+                        console.log(`📢 Notificación WebSocket enviada para: ${entity}`);
+                    }
+                }
+            }, 200); // 200ms es seguro
+            
+            return result;
+        } else {
+            // MEJOR MANEJO DE ERRORES HTTP
+            const errorText = await response.text();
+            console.error(`❌ Error API ${response.status}:`, errorText);
+            throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error guardando en D1:', error);
+        throw error; // Propagar el error para manejo superior
+    }
+}
+
+
+        /**
+         * Carga datos desde el worker
+         */
+        /**
+ * Carga datos desde el worker - VERSIÓN MEJORADA CON ACTUALIZACIÓN FORZADA
+ */
+async function loadData(forceRefresh = false) {
+    console.log('📥 Cargando datos...', { forceRefresh, lastSync: state.lastSync });
+    
+    // Mostrar indicador de carga si no hay datos
+    if (state.urgentes.length === 0) {
+        showLoadingIndicators();
+    }
+    
+    try {
+        // Siempre intentar cargar via HTTP primero, independientemente del WebSocket
+        const response = await fetch(`${WORKER_BASE_URL}/d1/get`);
+        
+        if (response.ok) {
+            const apiData = await response.json();
+            console.log('📊 Datos recibidos de D1:', apiData.summary);
+            
+            // Actualizar estado con datos recibidos
+            state.users = apiData.users || [];
+            state.urgentes = apiData.urgentes || [];
+            state.zonas = apiData.zonas || [];
+            state.zonitas = apiData.zonitas || [];
+            state.intercambios = apiData.intercambios || [];
+            state.propiedades = apiData.propiedades || [];
+            state.products = apiData.products || [];
+            state.lastSync = new Date().toISOString();
+            
+            console.log('✅ Datos cargados desde D1 correctamente');
+            
+            // Renderizar inmediatamente después de cargar
+            renderAllSections();
+            
+            return true;
+            
+        } else {
+            throw new Error(`Error API ${response.status}`);
+        }
+        
+    } catch (error) {
+        console.warn('⚠️ API no disponible:', error.message);
+        
+        // Si no hay datos locales, establecer datos por defecto
+        if (state.urgentes.length === 0) {
+            setDefaultData();
+            renderAllSections();
+        }
+        
+        return false;
+    }
+}
+
+/*
+async function loadData(forceRefresh = false) {
+    console.log('📥 Cargando datos...', { forceRefresh });
+    
+    // Mostrar indicador de carga si no hay datos
+    if (state.urgentes.length === 0) {
+        showLoadingIndicators();
+    }
+    
+    try {
+        const response = await fetch(`${WORKER_BASE_URL}/d1/get`);
+        
+        if (response.ok) {
+            const apiData = await response.json();
+            console.log('📊 Datos recibidos de D1:', apiData.summary);
+            
+            // Actualizar estado con datos recibidos
+            state.users = apiData.users || [];
+            state.urgentes = apiData.urgentes || [];
+            state.zonas = apiData.zonas || [];
+            state.zonitas = apiData.zonitas || [];
+            state.intercambios = apiData.intercambios || [];
+            state.propiedades = apiData.propiedades || [];
+            state.products = apiData.products || [];
+            state.lastSync = new Date().toISOString();
+            
+            console.log('✅ Datos cargados desde D1 correctamente');
+            
+            // Renderizar inmediatamente después de cargar
+            renderAllSections();
+            
+            return true;
+            
+        } else {
+            const errorText = await response.text();
+            console.error(`❌ Error HTTP ${response.status}:`, errorText);
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+        
+    } catch (error) {
+        console.warn('⚠️ API no disponible:', error.message);
+        
+        // Si no hay datos locales, establecer datos por defecto
+        if (state.urgentes.length === 0) {
+            setDefaultData();
+            renderAllSections();
+        }
+        
+        return false;
+    }
+}
+*/
+
+/**
+ * Muestra indicadores de carga en las secciones
+ */
+function showLoadingIndicators() {
+    const sections = [
+        'urgentesGrid', 'zonasGrid', 'zonitasGrid', 
+        'intercambiosGrid', 'propiedadesGrid', 'misPublicacionesGrid',
+        'bestRatedGrid'
+    ];
+    
+    sections.forEach(sectionId => {
+        const section = getElement(sectionId);
+        if (section) {
+            section.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">
+                    <div class="loading-spinner" style="width: 30px; height: 30px; margin: 0 auto 1rem;"></div>
+                    <p>Cargando contenido...</p>
+                </div>
+            `;
+        }
+    });
+}
+
+        /**
+         * Establece datos por defecto
+         */
+        function setDefaultData() {
+            state.urgentes = [
+                {
+                    id: 1,
+                    title: 'Bienvenido a Guasitos',
+                    description: 'Esta es una versión de demostración. Conecta con el servidor para ver datos reales.',
+                    image: '🚨',
+                    author_name: 'Sistema',
+                    created_at: new Date().toISOString(),
+                    views: 0,
+                    likes: 0
+                }
+            ];
+            
+            state.zonas = [];
+            state.zonitas = [];
+            state.intercambios = [];
+            state.propiedades = [];
+            state.products = [];
+        }
+
+        // ==================== RENDERIZADO DE UI ====================
+
+        /**
+         * Renderiza una sección de contenido con scroll horizontal
+         */
+        function renderScrollSection(sectionId, data, itemRenderer) {
+            const section = getElement(sectionId);
+            if (!section) return;
+            
+            section.innerHTML = '';
+            
+            if (data.length === 0) {
+                section.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">
+                        <i class="fas fa-info-circle fa-3x" style="margin-bottom: 1rem;"></i>
+                        <p>No hay contenido disponible</p>
+                        ${state.wsManager && !state.wsManager.isConnected ? 
+                          '<p><small>Conecta con el servidor para ver datos reales</small></p>' : ''}
+                    </div>
+                `;
+                return;
+            }
+            
+            data.forEach(item => {
+                const card = itemRenderer(item);
+                section.appendChild(card);
+            });
+        }
+
+        /**
+         * Renderiza una noticia urgente
+         */
+        function renderUrgenteCard(news) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imageHtml = news.image && news.image.startsWith('data:') ?
+                `<img src="${news.image}" class="card-image" alt="${news.title}">` :
+                `<div class="card-image">${news.image || '📰'}</div>`;
+                
+            const isViewed = state.userViews.has(news.id);
+            const isLiked = state.userLikes.has(news.id);
+                
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="card-content">
+                    <h3 class="card-title">${news.title}</h3>
+                    <p class="card-description">${news.description}</p>
+                    <div class="card-actions">
+                        <button class="action-btn view-btn ${isViewed ? 'active' : ''}" data-id="${news.id}">
+                            <i class="fas fa-eye"></i>
+                            <span class="action-count">${news.views || 0}</span>
+                        </button>
+                        <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" data-id="${news.id}">
+                            <i class="fas fa-heart"></i>
+                            <span class="action-count">${news.likes || 0}</span>
+                        </button>
+                    </div>
+                    <div class="news-meta" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light); font-size: 0.8rem; color: var(--text-muted);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>
+                                <i class="fas fa-user"></i> ${news.author_name || news.author || 'Anónimo'}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock"></i> ${new Date(news.created_at).toLocaleString('es-ES')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Agregar event listeners para los botones
+            const viewBtn = card.querySelector('.view-btn');
+            const likeBtn = card.querySelector('.like-btn');
+            
+            viewBtn.addEventListener('click', () => handleViewClick(news.id));
+            likeBtn.addEventListener('click', () => handleLikeClick(news.id));
+            
+            return card;
+        }
+
+        /**
+         * Maneja el click en vista
+         */
+        async function handleViewClick(newsId) {
+            if (state.userViews.has(newsId)) return;
+            
+            try {
+                await saveToD1('update_urgente_views', { urgenteId: newsId });
+                state.userViews.add(newsId);
+                
+                // Actualizar contador localmente
+                const news = state.urgentes.find(n => n.id === newsId);
+                if (news) {
+                    news.views = (news.views || 0) + 1;
+                    renderAllSections();
+                }
+            } catch (error) {
+                console.error('Error actualizando vistas:', error);
+            }
+        }
+
+        /**
+         * Maneja el click en like
+         */
+        async function handleLikeClick(newsId) {
+            if (state.userLikes.has(newsId)) return;
+            
+            try {
+                await saveToD1('update_urgente_likes', { urgenteId: newsId });
+                state.userLikes.add(newsId);
+                
+                // Actualizar contador localmente
+                const news = state.urgentes.find(n => n.id === newsId);
+                if (news) {
+                    news.likes = (news.likes || 0) + 1;
+                    renderAllSections();
+                }
+            } catch (error) {
+                console.error('Error actualizando likes:', error);
+            }
+        }
+
+        /**
+         * Renderiza todas las secciones
+         */
+        function renderAllSections() {
+            renderScrollSection('urgentesGrid', state.urgentes, renderUrgenteCard);
+            renderScrollSection('zonasGrid', state.zonas, renderZonaCard);
+            renderScrollSection('zonitasGrid', state.zonitas, renderZonitaCard);
+            renderScrollSection('intercambiosGrid', state.intercambios, renderIntercambioCard);
+            renderScrollSection('propiedadesGrid', state.propiedades, renderPropiedadCard);
+            renderScrollSection('misPublicacionesGrid', getMyPublications(), renderMyPublicationCard);
+            
+            // Renderizar mejor calificados
+            renderBestRatedSection();
+        }
+
+        /**
+         * Renderiza sección de productos mejor calificados
+         */
+        function renderBestRatedSection() {
+            const section = getElement('bestRatedGrid');
+            if (!section) return;
+            
+            // Obtener productos con calificaciones
+            const ratedProducts = state.products.map(product => {
+                const totalRatings = (product.quality_star5 || 0) + (product.quality_star4 || 0) + 
+                                   (product.quality_star3 || 0) + (product.quality_star2 || 0) + 
+                                   (product.quality_star1 || 0);
+                
+                const averageRating = totalRatings > 0 ? 
+                    ((product.quality_star5 || 0) * 5 + (product.quality_star4 || 0) * 4 + 
+                     (product.quality_star3 || 0) * 3 + (product.quality_star2 || 0) * 2 + 
+                     (product.quality_star1 || 0) * 1) / totalRatings : 0;
+                
+                return {
+                    ...product,
+                    averageRating: averageRating,
+                    totalRatings: totalRatings
+                };
+            }).filter(product => product.totalRatings > 0)
+              .sort((a, b) => b.averageRating - a.averageRating)
+              .slice(0, 10);
+            
+            if (ratedProducts.length === 0) {
+                section.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">
+                        <i class="fas fa-star fa-3x" style="margin-bottom: 1rem;"></i>
+                        <p>Los productos mejor calificados aparecerán aquí</p>
+                        <p><small>Califica productos para ayudar a la comunidad</small></p>
+                    </div>
+                `;
+                return;
+            }
+            
+            section.innerHTML = '';
+            ratedProducts.forEach(product => {
+                const productCard = renderProductCard(product, true);
+                section.appendChild(productCard);
+            });
+        }
+
+        /**
+         * Renderiza tarjeta de producto mejorada con nuevas funcionalidades
+         */
+        /**
+ * Renderiza tarjeta de producto mejorada con información del negocio
+ */
+function renderProductCard(product, showVendor = false) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    
+    // Calcular rating promedio
+    const totalRatings = (product.quality_star5 || 0) + (product.quality_star4 || 0) + 
+                       (product.quality_star3 || 0) + (product.quality_star2 || 0) + 
+                       (product.quality_star1 || 0);
+    
+    const averageRating = totalRatings > 0 ? 
+        ((product.quality_star5 || 0) * 5 + (product.quality_star4 || 0) * 4 + 
+         (product.quality_star3 || 0) * 3 + (product.quality_star2 || 0) * 2 + 
+         (product.quality_star1 || 0) * 1) / totalRatings : 0;
+    
+    const userRating = state.userRatings.get(product.id);
+    
+    const imageHtml = product.image && product.image.startsWith('data:') ?
+        `<img src="${product.image}" class="product-image" alt="${product.name}">` :
+        `<div class="product-image">${product.image || '📦'}</div>`;
+    
+    card.innerHTML = `
+        ${imageHtml}
+        <div class="product-header">
+            <div class="product-name">${product.name}</div>
+            <div class="product-price">${product.price}</div>
+        </div>
+        
+        <!-- INFORMACIÓN DEL NEGOCIO - NUEVO -->
+        ${showVendor ? `
+        <div class="vendor-info" style="margin-bottom: 0.75rem;">
+            <div class="product-vendor" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <i class="fas fa-store" style="color: var(--primary);"></i>
+                <strong style="font-size: 0.85rem;">${product.entity_name || 'Vendedor'}</strong>
+            </div>
+            ${product.entity_description ? `
+            <div class="vendor-address" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                <i class="fas fa-map-marker-alt" style="margin-right: 0.3rem;"></i>
+                ${product.entity_description}
+            </div>
+            ` : ''}
+            ${product.entity_phone ? `
+            <div class="vendor-contact" style="font-size: 0.75rem; color: var(--primary);">
+                <i class="fas fa-phone" style="margin-right: 0.3rem;"></i>
+                ${product.entity_phone}
+            </div>
+            ` : ''}
+        </div>
+        ` : ''}
+        
+        <div class="rating-section">
+            <div class="rating-stars" data-product-id="${product.id}">
+                ${[1,2,3,4,5].map(star => `
+                    <span class="star ${star <= Math.round(averageRating) ? 'active' : ''} ${userRating && star <= userRating ? 'rated' : ''}" 
+                          data-rating="${star}">
+                            <i class="fas fa-star"></i>
+                    </span>
+                `).join('')}
+            </div>
+            <div class="rating-info">
+                <div class="rating-value">${averageRating.toFixed(1)}</div>
+                <div class="rating-count">${totalRatings} calificaciones</div>
+            </div>
+        </div>
+        
+        ${userRating ? `
+        <div style="text-align: center; margin-top: 0.5rem;">
+            <small style="color: var(--primary); font-weight: 600;">
+                <i class="fas fa-check-circle"></i> Tu calificación: ${userRating} estrellas
+            </small>
+        </div>
+        ` : ''}
+        
+        <!-- Nuevas funcionalidades: botones de acción rápida -->
+        <div class="quick-actions">
+            <button class="quick-action-btn btn-secondary small" onclick="handleEditPrice(${product.id}, '${product.entity_type}', ${product.entity_id})">
+                <i class="fas fa-edit"></i> Editar Precio
+            </button>
+            <button class="quick-action-btn btn-warning small" onclick="handleMarkOutOfStock(${product.id}, '${product.entity_type}', ${product.entity_id})">
+                <i class="fas fa-box"></i> Agotado
+            </button>
+            <button class="quick-action-btn btn-danger small" onclick="handleDeleteProduct(${product.id}, '${product.entity_type}', ${product.entity_id})">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
+    `;
+    
+    // Agregar event listeners para las estrellas
+    const stars = card.querySelectorAll('.star');
+    stars.forEach(star => {
+        star.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const productId = parseInt(star.closest('.rating-stars').getAttribute('data-product-id'));
+            const rating = parseInt(star.getAttribute('data-rating'));
+            handleProductRating(productId, rating);
+        });
+    });
+    
+    return card;
+}
+
+        /**
+         * Maneja la calificación de productos - FUNCIÓN CORREGIDA
+         */
+       async function handleProductRating(productId, rating) {
+    console.log(`⭐ Calificando producto ${productId} con ${rating} estrellas`);
+    
+    if (!state.currentUser) {
+        showNotification('Inicia sesión', 'Debes iniciar sesión para calificar productos', 'warning');
+        return;
+    }
+    
+    // Verificar si el usuario ya calificó este producto
+    if (state.userRatings.has(productId)) {
+        showNotification('Ya calificaste', 'Solo puedes calificar un producto una vez', 'warning');
+        return;
+    }
+    
+    try {
+        const product = state.products.find(p => p.id === productId);
+        if (!product) {
+            console.error('Producto no encontrado:', productId);
+            showNotification('Error', 'Producto no encontrado', 'error');
+            return;
+        }
+        
+        console.log('Enviando calificación al servidor...');
+        
+        // DESACTIVAR TEMPORALMENTE ACTUALIZACIONES AUTOMÁTICAS
+        const originalHandleDataUpdate = state.wsManager?.handleDataUpdate;
+        if (state.wsManager) {
+            state.wsManager.handleDataUpdate = () => {
+                console.log('⏸️ Actualizaciones automáticas pausadas durante calificación');
+            };
+        }
+        
+        await saveToD1('rate_quality', {
+            productId: productId,
+            entityType: product.entity_type,
+            entityId: product.entity_id,
+            rating: rating
+        });
+        
+        // Restaurar manejo de actualizaciones
+        if (state.wsManager && originalHandleDataUpdate) {
+            state.wsManager.handleDataUpdate = originalHandleDataUpdate;
+        }
+        
+        // Guardar rating localmente
+        state.userRatings.set(productId, rating);
+        
+        showNotification('Calificación enviada', `Calificaste con ${rating} estrellas`, 'success');
+        
+        // Recargar después de un delay seguro
+        setTimeout(() => {
+            renderBestRatedSection();
+            // Forzar recarga de datos después de 1 segundo
+            setTimeout(() => {
+                loadData(true).catch(console.error);
+            }, 1000);
+        }, 500);
+        
+        console.log('✅ Calificación procesada correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error enviando calificación:', error);
+        
+        // Restaurar manejo de actualizaciones en caso de error
+        if (state.wsManager && originalHandleDataUpdate) {
+            state.wsManager.handleDataUpdate = originalHandleDataUpdate;
+        }
+        
+        showNotification('Error', 'No se pudo enviar la calificación', 'error');
+    }
+}
+
+
+        /**
+         * Maneja la edición de precio de producto
+         */
+        async function handleEditPrice(productId, entityType, entityId) {
+            if (!state.currentUser) {
+                showNotification('Inicia sesión', 'Debes iniciar sesión para editar precios', 'warning');
+                return;
+            }
+            
+            const newPrice = prompt('Ingresa el nuevo precio del producto:');
+            if (newPrice && newPrice.trim()) {
+                try {
+                    await saveToD1('update_product', {
+                        productId: productId,
+                        entityType: entityType,
+                        entityId: entityId,
+                        price: newPrice.trim()
+                    });
+                    
+                    showNotification('Precio actualizado', 'El precio se ha actualizado correctamente', 'success');
+                    
+                    // Recargar datos
+                    await loadData(true);
+                    renderAllSections();
+                    
+                } catch (error) {
+                    console.error('Error actualizando precio:', error);
+                    showNotification('Error', 'No se pudo actualizar el precio', 'error');
+                }
+            }
+        }
+
+        /**
+         * Maneja el marcado de producto como agotado
+         */
+        async function handleMarkOutOfStock(productId, entityType, entityId) {
+            if (!state.currentUser) {
+                showNotification('Inicia sesión', 'Debes iniciar sesión para marcar productos', 'warning');
+                return;
+            }
+            
+            if (confirm('¿Marcar este producto como agotado? Los usuarios verán que no está disponible temporalmente.')) {
+                try {
+                    // Aquí podrías agregar una operación específica para marcar como agotado
+                    // Por ahora usamos update_product para cambiar el precio temporalmente
+                    await saveToD1('update_product', {
+                        productId: productId,
+                        entityType: entityType,
+                        entityId: entityId,
+                        price: 'AGOTADO - Próximamente'
+                    });
+                    
+                    showNotification('Producto marcado', 'El producto se ha marcado como agotado', 'success');
+                    
+                    // Recargar datos
+                    await loadData(true);
+                    renderAllSections();
+                    
+                } catch (error) {
+                    console.error('Error marcando producto:', error);
+                    showNotification('Error', 'No se pudo marcar el producto', 'error');
+                }
+            }
+        }
+
+        /**
+         * Maneja la eliminación de producto
+         */
+        async function handleDeleteProduct(productId, entityType, entityId) {
+            if (!state.currentUser) {
+                showNotification('Inicia sesión', 'Debes iniciar sesión para eliminar productos', 'warning');
+                return;
+            }
+            
+            if (confirm('¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.')) {
+                try {
+                    await saveToD1('delete_product', {
+                        productId: productId,
+                        entityType: entityType,
+                        entityId: entityId
+                    });
+                    
+                    showNotification('Producto eliminado', 'El producto se ha eliminado correctamente', 'success');
+                    
+                    // Recargar datos
+                    await loadData(true);
+                    renderAllSections();
+                    
+                } catch (error) {
+                    console.error('Error eliminando producto:', error);
+                    showNotification('Error', 'No se pudo eliminar el producto', 'error');
+                }
+            }
+        }
+
+        /**
+         * Obtiene las publicaciones del usuario actual
+         */
+        function getMyPublications() {
+            if (!state.currentUser) return [];
+            
+            const userId = state.currentUser.id;
+            const myPublications = [];
+            
+            // Agregar noticias del usuario
+            state.urgentes
+                .filter(urgente => urgente.author_id === userId)
+                .forEach(urgente => {
+                    myPublications.push({
+                        ...urgente,
+                        type: 'noticia',
+                        type_icon: '📰'
+                    });
+                });
+            
+            // Agregar negocios del usuario
+            state.zonas
+                .filter(zona => zona.owner_id === userId)
+                .forEach(zona => {
+                    myPublications.push({
+                        ...zona,
+                        type: 'negocio',
+                        type_icon: '🏪'
+                    });
+                });
+            
+            // Agregar zonitas del usuario
+            state.zonitas
+                .filter(zonita => zonita.owner_id === userId)
+                .forEach(zonita => {
+                    myPublications.push({
+                        ...zonita,
+                        type: 'zonita',
+                        type_icon: '👨‍🔧'
+                    });
+                });
+            
+            // Agregar intercambios del usuario
+            state.intercambios
+                .filter(intercambio => intercambio.author_id === userId)
+                .forEach(intercambio => {
+                    myPublications.push({
+                        ...intercambio,
+                        type: 'intercambio',
+                        type_icon: '🔄'
+                    });
+                });
+            
+            // Agregar propiedades del usuario
+            state.propiedades
+                .filter(propiedad => propiedad.author_id === userId)
+                .forEach(propiedad => {
+                    myPublications.push({
+                        ...propiedad,
+                        type: 'propiedad',
+                        type_icon: '🏠'
+                    });
+                });
+            
+            // Agregar productos del usuario
+            state.products
+                .filter(product => product.created_by === userId)
+                .forEach(product => {
+                    myPublications.push({
+                        ...product,
+                        type: 'producto',
+                        type_icon: '📦'
+                    });
+                });
+            
+            return myPublications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        /**
+         * Renderiza tarjeta de publicación personal
+         */
+        function renderMyPublicationCard(publication) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imageHtml = publication.image && publication.image.startsWith('data:') ?
+                `<img src="${publication.image}" class="card-image" alt="${publication.title}">` :
+                `<div class="card-image">${publication.type_icon || '📄'}</div>`;
+            
+            let statusBadge = '';
+            if (publication.status) {
+                const statusClass = publication.status === 'active' ? 'active' : 'inactive';
+                statusBadge = `<span class="status-badge ${statusClass}">${publication.status}</span>`;
+            }
+            
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="card-content">
+                    <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 0.5rem;">
+                        <h3 class="card-title" style="flex: 1;">${publication.title || publication.business_name || publication.name}</h3>
+                        ${statusBadge}
+                    </div>
+                    <p class="card-description">${publication.description || publication.offer || ''}</p>
+                    <div style="margin-top: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+                            <span>
+                                <i class="fas ${getTypeIcon(publication.type)}"></i>
+                                ${publication.type.charAt(0).toUpperCase() + publication.type.slice(1)}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock"></i>
+                                ${new Date(publication.created_at).toLocaleDateString('es-ES')}
+                            </span>
+                        </div>
+                        ${publication.views !== undefined ? `
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.75rem;">
+                            <span><i class="fas fa-eye"></i> ${publication.views || 0} vistas</span>
+                            <span><i class="fas fa-heart"></i> ${publication.likes || 0} likes</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        /**
+         * Obtiene el icono según el tipo de publicación
+         */
+        function getTypeIcon(type) {
+            const icons = {
+                'noticia': 'fa-newspaper',
+                'negocio': 'fa-store',
+                'zonita': 'fa-user-tie',
+                'intercambio': 'fa-exchange-alt',
+                'propiedad': 'fa-home',
+                'producto': 'fa-box'
+            };
+            return icons[type] || 'fa-file';
+        }
+
+        /**
+         * Renderiza tarjeta de zona
+         */
+        function renderZonaCard(zona) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imageHtml = zona.image && zona.image.startsWith('data:') ?
+                `<img src="${zona.image}" class="card-image" alt="${zona.business_name}">` :
+                `<div class="card-image">${zona.image || '🏪'}</div>`;
+            
+            // Obtener productos de esta zona
+            const zonaProducts = state.products.filter(p => p.entity_type === 'zona' && p.entity_id === zona.id);
+            
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="card-content">
+                    <h3 class="card-title">${zona.business_name || zona.title}</h3>
+                    <p class="card-description">${zona.description}</p>
+                    
+                    ${zonaProducts.length > 0 ? `
+                    <div style="margin-top: 1rem;">
+                        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--primary);">
+                            <i class="fas fa-boxes"></i> Productos (${zonaProducts.length})
+                        </h4>
+                        <div class="products-grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
+                            ${zonaProducts.slice(0, 3).map(product => `
+                                <div class="product-card" style="padding: 0.5rem; margin: 0;">
+                                    ${renderProductCard(product).innerHTML}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${zonaProducts.length > 3 ? `
+                        <div style="text-align: center; margin-top: 0.5rem;">
+                            <small style="color: var(--text-muted);">
+                                ... y ${zonaProducts.length - 3} productos más
+                            </small>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : `
+                    <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: var(--surface-light); border-radius: var(--radius);">
+                        <i class="fas fa-box-open fa-2x" style="color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                        <p style="color: var(--text-muted); font-size: 0.8rem;">No hay productos registrados</p>
+                    </div>
+                    `}
+                    
+                    <div class="contact-info" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                            <i class="fas fa-phone" style="color: var(--primary);"></i>
+                            <span>${zona.phone || 'No disponible'}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        <i class="fas fa-user"></i> Por: ${zona.owner_name || 'Propietario'}
+                    </div>
+                </div>
+            `;
+            
+            // Re-configurar event listeners para productos dentro de la zona
+            const productCards = card.querySelectorAll('.product-card');
+            productCards.forEach(productCard => {
+                const stars = productCard.querySelectorAll('.star');
+                stars.forEach(star => {
+                    star.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const productId = parseInt(star.closest('.rating-stars').getAttribute('data-product-id'));
+                        const rating = parseInt(star.getAttribute('data-rating'));
+                        handleProductRating(productId, rating);
+                    });
+                });
+            });
+            
+            return card;
+        }
+
+        /**
+         * Renderiza tarjeta de zonita
+         */
+        function renderZonitaCard(zonita) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imageHtml = zonita.image && zonita.image.startsWith('data:') ?
+                `<img src="${zonita.image}" class="card-image" alt="${zonita.business_name}">` :
+                `<div class="card-image">${zonita.image || '👨‍🔧'}</div>`;
+            
+            // Obtener productos de esta zonita
+            const zonitaProducts = state.products.filter(p => p.entity_type === 'zonita' && p.entity_id === zonita.id);
+            
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="card-content">
+                    <h3 class="card-title">${zonita.business_name || zonita.title}</h3>
+                    <p class="card-description">${zonita.description}</p>
+                    
+                    ${zonitaProducts.length > 0 ? `
+                    <div style="margin-top: 1rem;">
+                        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--primary);">
+                            <i class="fas fa-tools"></i> Servicios/Productos (${zonitaProducts.length})
+                        </h4>
+                        <div class="products-grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
+                            ${zonitaProducts.slice(0, 3).map(product => `
+                                <div class="product-card" style="padding: 0.5rem; margin: 0;">
+                                    ${renderProductCard(product).innerHTML}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${zonitaProducts.length > 3 ? `
+                        <div style="text-align: center; margin-top: 0.5rem;">
+                            <small style="color: var(--text-muted);">
+                                ... y ${zonitaProducts.length - 3} servicios más
+                            </small>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : `
+                    <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: var(--surface-light); border-radius: var(--radius);">
+                        <i class="fas fa-tools fa-2x" style="color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                        <p style="color: var(--text-muted); font-size: 0.8rem;">No hay servicios registrados</p>
+                    </div>
+                    `}
+                    
+                    <div class="contact-info" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                            <i class="fas fa-phone" style="color: var(--primary);"></i>
+                            <span>${zonita.phone || 'No disponible'}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        <i class="fas fa-user"></i> Por: ${zonita.owner_name || 'Emprendedor'}
+                    </div>
+                </div>
+            `;
+            
+            // Re-configurar event listeners para productos dentro de la zonita
+            const productCards = card.querySelectorAll('.product-card');
+            productCards.forEach(productCard => {
+                const stars = productCard.querySelectorAll('.star');
+                stars.forEach(star => {
+                    star.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const productId = parseInt(star.closest('.rating-stars').getAttribute('data-product-id'));
+                        const rating = parseInt(star.getAttribute('data-rating'));
+                        handleProductRating(productId, rating);
+                    });
+                });
+            });
+            
+            return card;
+        }
+
+        /**
+         * Renderiza tarjeta de intercambio
+         */
+        function renderIntercambioCard(intercambio) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            card.innerHTML = `
+                <div class="card-image">🔄</div>
+                <div class="card-content">
+                    <h3 class="card-title">${intercambio.title}</h3>
+                    <p class="card-description"><strong>Ofrezco:</strong> ${intercambio.offer}</p>
+                    <p class="card-description"><strong>Busco:</strong> ${intercambio.request}</p>
+                    <div class="contact-info" style="margin-top: 0.5rem;">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${intercambio.location}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        <i class="fas fa-user"></i> Por: ${intercambio.author_name || 'Usuario'}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        /**
+         * Renderiza tarjeta de propiedad
+         */
+        function renderPropiedadCard(propiedad) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const tipo = propiedad.type === 'venta' ? 'Venta' : 
+                        propiedad.type === 'permuta' ? 'Permuta' : 'Venta/Permuta';
+            
+            card.innerHTML = `
+                <div class="card-image">🏠</div>
+                <div class="card-content">
+                    <h3 class="card-title">${propiedad.title}</h3>
+                    <p class="card-description">${propiedad.description}</p>
+                    <p class="card-description"><strong>Ubicación:</strong> ${propiedad.location}</p>
+                    <p class="card-description"><strong>Tipo:</strong> ${tipo}</p>
+                    ${propiedad.price ? `<p class="card-description"><strong>Precio:</strong> ${propiedad.price}</p>` : ''}
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        <i class="fas fa-user"></i> Por: ${propiedad.author_name || 'Propietario'}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        /**
+         * Actualiza la UI según el estado del usuario
+         */
+        function updateUIForUser() {
+            const userName = getElement('userName');
+            const userRole = getElement('userRole');
+            const userAvatar = getElement('userAvatar');
+            
+            if (state.currentUser) {
+                if (userName) userName.textContent = state.currentUser.name || state.currentUser.username;
+                if (userRole) userRole.textContent = state.currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
+                if (userAvatar) userAvatar.textContent = (state.currentUser.name || state.currentUser.username).charAt(0).toUpperCase();
+            } else {
+                if (userName) userName.textContent = 'Invitado';
+                if (userRole) userRole.textContent = 'No logueado';
+                if (userAvatar) userAvatar.textContent = 'U';
+            }
+        }
+
+        // ==================== CONFIGURACIÓN DE EVENTOS ====================
+
+        /**
+         * Configura la navegación
+         */
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('data-section');
+                    const modalId = link.getAttribute('data-modal');
+                    
+                    if (sectionId) {
+                        const section = getElement(sectionId);
+                        if (section) {
+                            section.scrollIntoView({ behavior: 'smooth' });
+                            navLinks.forEach(l => l.classList.remove('active'));
+                            link.classList.add('active');
+                            
+                            // En móvil, cerrar sidebar después de navegar
+                            if (window.innerWidth <= 768) {
+                                getElement('sidebar').classList.remove('active');
+                            }
+                        }
+                    } else if (modalId) {
+                        const modal = getElement(modalId);
+                        if (modal) {
+                            const requiresLogin = !['loginModal', 'registerModal', 'supportModal', 'helpModal'].includes(modalId);
+                            if (requiresLogin && !state.currentUser) {
+                                showNotification('Inicia sesión', 'Debes iniciar sesión para acceder a esta función', 'warning');
+                                showModal(getElement('loginModal'));
+                                return;
+                            }
+                            showModal(modal);
+                            
+                            // En móvil, cerrar sidebar después de abrir modal
+                            if (window.innerWidth <= 768) {
+                                getElement('sidebar').classList.remove('active');
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Botón menú móvil
+            const mobileMenuBtn = getElement('mobileMenuBtn');
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    getElement('sidebar').classList.toggle('active');
+                });
+            }
+            
+            // Overlay para cerrar modales/sidebar
+            const overlay = getElement('overlay');
+            if (overlay) {
+                overlay.addEventListener('click', () => {
+                    const modals = document.querySelectorAll('.modal');
+                    modals.forEach(modal => hideModal(modal));
+                    getElement('sidebar').classList.remove('active');
+                });
+            }
+            
+            // Cerrar sidebar al hacer click en el contenido principal en móvil
+            const mainContent = getElement('mainContent');
+            if (mainContent) {
+                mainContent.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        getElement('sidebar').classList.remove('active');
+                    }
+                });
+            }
+            
+            // Menú de usuario
+            const userMenu = getElement('userMenu');
+            if (userMenu) {
+                userMenu.addEventListener('click', () => {
+                    if (!state.currentUser) {
+                        showModal(getElement('loginModal'));
+                    } else {
+                        if (confirm('¿Deseas cerrar sesión?')) {
+                            state.currentUser = null;
+                            state.userRatings.clear();
+                            updateUIForUser();
+                            showNotification('Sesión cerrada', 'Has cerrado sesión', 'info');
+                        }
+                    }
+                });
+            }
+        }
+
+        /**
+         * Configura los event listeners
+         */
+        function setupEventListeners() {
+            // Configurar previews de imágenes
+            setupImagePreview(getElement('uploadImage'), getElement('uploadImagePreview'));
+            setupImagePreview(getElement('zoneImage'), getElement('zoneImagePreview'));
+            setupImagePreview(getElement('zonitaImage'), getElement('zonitaImagePreview'));
+            setupImagePreview(getElement('productZoneImage'), getElement('productZoneImagePreview'));
+            setupImagePreview(getElement('productZonitaImage'), getElement('productZonitaImagePreview'));
+            setupImagePreview(getElement('exchangeImages'), getElement('exchangeImagePreview'));
+            setupImagePreview(getElement('propertyImages'), getElement('propertyImagePreview'));
+
+            // Botón de login
+            const loginBtn = getElement('loginBtn');
+            if (loginBtn) {
+                
+                // En el botón de login - VERSIÓN SIMPLIFICADA
+loginBtn.addEventListener('click', async () => {
+    const username = getElement('loginUsername')?.value.trim() || '';
+    const password = getElement('loginPassword')?.value || '';
+    
+    if (!username || !password) {
+        showNotification('Datos incompletos', 'Completa todos los campos', 'warning');
+        return;
+    }
+    
+    try {
+        showNotification('Conectando', 'Iniciando sesión...', 'info', 0);
+        
+        const response = await fetch(`${WORKER_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 1. Guardar usuario
+            state.currentUser = result.user;
+            state.currentUser.session_token = result.session_token;
+            updateUIForUser();
+            
+            // 2. 🔐 AUTENTICAR WEBSOCKET EXISTENTE (NO RECONECTAR)
+            if (state.wsManager && state.wsManager.isConnected) {
+                state.wsManager.authenticate(result.session_token);
+            }
+            
+            // 3. Recargar datos
+            await loadData(true);
+            renderAllSections();
+            
+            // 4. Limpiar y cerrar
+            hideModal(getElement('loginModal'));
+            getElement('loginUsername').value = '';
+            getElement('loginPassword').value = '';
+            
+            showNotification('¡Bienvenido!', `Hola ${state.currentUser.name}`, 'success');
+            
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        showNotification('Error', 'Login falló', 'error');
+    }
+});
+            }
+            
+            // Botón de registro
+            const registerBtn = getElement('registerBtn');
+            if (registerBtn) {
+                registerBtn.addEventListener('click', async () => {
+                    const name = getElement('registerName')?.value.trim() || '';
+                    const username = getElement('registerUsername')?.value.trim() || '';
+                    const phone = getElement('registerPhone')?.value.trim() || '';
+                    const password = getElement('registerPassword')?.value || '';
+                    const confirmPassword = getElement('registerConfirmPassword')?.value || '';
+                    
+                    if (!name || !username || !phone || !password || !confirmPassword) {
+                        showNotification('Datos incompletos', 'Completa todos los campos', 'warning');
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        showNotification('Error', 'Las contraseñas no coinciden', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        const result = await saveToD1('register_user', {
+                            username: username,
+                            password: password,
+                            name: name,
+                            phone: phone
+                        });
+                        
+                        if (result.success) {
+                            // Iniciar sesión automáticamente después del registro
+                            const loginResponse = await fetch(`${WORKER_BASE_URL}/login`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    username: username,
+                                    password: password
+                                })
+                            });
+                            
+                            if (loginResponse.ok) {
+                                const loginResult = await loginResponse.json();
+                                if (loginResult.success) {
+                                    state.currentUser = loginResult.user;
+                                    state.currentUser.session_token = loginResult.session_token;
+                                    updateUIForUser();
+                                    hideModal(getElement('registerModal'));
+                                    showNotification('Cuenta creada', `Bienvenido ${name}`, 'success');
+                                    
+                                    // Limpiar formulario
+                                    if (getElement('registerName')) getElement('registerName').value = '';
+                                    if (getElement('registerUsername')) getElement('registerUsername').value = '';
+                                    if (getElement('registerPhone')) getElement('registerPhone').value = '';
+                                    if (getElement('registerPassword')) getElement('registerPassword').value = '';
+                                    if (getElement('registerConfirmPassword')) getElement('registerConfirmPassword').value = '';
+                                    
+                                    // Recargar datos
+                                    await loadData(true);
+                                    renderAllSections();
+                                }
+                            }
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                    } catch (error) {
+                        showNotification('Error', 'No se pudo crear la cuenta', 'error');
+                    }
+                });
+            }
+
+            // Botón de subir noticia
+            const uploadBtn = getElement('uploadBtn');
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', async () => {
+                    const title = getElement('uploadTitle')?.value.trim() || '';
+                    const content = getElement('uploadContent')?.value.trim() || '';
+                    const imageFile = getElement('uploadImage')?.files[0] || null;
+                    
+                    if (!title || !content) {
+                        showNotification('Campos requeridos', 'Completa título y contenido', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para publicar', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Publicando noticia...', 'info', 0);
+                        
+                        let imageData = null;
+                        if (imageFile) {
+                            try {
+                                const compressedImage = await compressImage(imageFile);
+                                imageData = await imageToBase64(compressedImage);
+                            } catch (imageError) {
+                                console.error('Error procesando imagen:', imageError);
+                                showNotification('Advertencia', 'No se pudo procesar la imagen, continuando sin ella', 'warning');
+                            }
+                        }
+                        
+                        // Guardar en D1 con el ID del usuario actual
+                        const result = await saveToD1('add_urgente', {
+                            title: title,
+                            description: content,
+                            image: imageData || '📰',
+                            author_id: state.currentUser.id
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('uploadTitle')) getElement('uploadTitle').value = '';
+                            if (getElement('uploadContent')) getElement('uploadContent').value = '';
+                            if (getElement('uploadImage')) getElement('uploadImage').value = '';
+                            if (getElement('uploadImagePreview')) {
+                                getElement('uploadImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona una imagen</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('uploadModal'));
+                            showNotification('Éxito', 'Noticia publicada correctamente', 'success');
+                            
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error publicando noticia:', error);
+                        showNotification('Error', 'No se pudo publicar la noticia', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar negocio
+            const addZoneBtn = getElement('addZoneBtn');
+            if (addZoneBtn) {
+                addZoneBtn.addEventListener('click', async () => {
+                    const businessName = getElement('zoneBusinessName')?.value.trim() || '';
+                    const description = getElement('zoneDescription')?.value.trim() || '';
+                    const phone = getElement('zonePhone')?.value.trim() || '';
+                    const imageFile = getElement('zoneImage')?.files[0] || null;
+                    
+                    if (!businessName || !description) {
+                        showNotification('Campos requeridos', 'Completa nombre y descripción del negocio', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para crear un negocio', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Creando negocio...', 'info', 0);
+                        
+                        let imageData = null;
+                        if (imageFile) {
+                            try {
+                                const compressedImage = await compressImage(imageFile);
+                                imageData = await imageToBase64(compressedImage);
+                            } catch (imageError) {
+                                console.error('Error procesando imagen:', imageError);
+                                showNotification('Advertencia', 'No se pudo procesar la imagen, continuando sin ella', 'warning');
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_zona', {
+                            title: businessName,
+                            businessName: businessName,
+                            description: description,
+                            phone: phone || 'No disponible',
+                            image: imageData || '🏬',
+                            owner_id: state.currentUser.id
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('zoneBusinessName')) getElement('zoneBusinessName').value = '';
+                            if (getElement('zoneDescription')) getElement('zoneDescription').value = '';
+                            if (getElement('zonePhone')) getElement('zonePhone').value = '';
+                            if (getElement('zoneImage')) getElement('zoneImage').value = '';
+                            if (getElement('zoneImagePreview')) {
+                                getElement('zoneImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona una imagen</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addZoneModal'));
+                            showNotification('Éxito', 'Negocio creado correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error creando negocio:', error);
+                        showNotification('Error', 'No se pudo crear el negocio', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar zonita
+            const addZonitaBtn = getElement('addZonitaBtn');
+            if (addZonitaBtn) {
+                addZonitaBtn.addEventListener('click', async () => {
+                    const businessName = getElement('zonitaBusinessName')?.value.trim() || '';
+                    const description = getElement('zonitaDescription')?.value.trim() || '';
+                    const phone = getElement('zonitaPhone')?.value.trim() || '';
+                    const imageFile = getElement('zonitaImage')?.files[0] || null;
+                    
+                    if (!businessName || !description) {
+                        showNotification('Campos requeridos', 'Completa nombre y descripción de la zonita', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para crear una zonita', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Creando zonita...', 'info', 0);
+                        
+                        let imageData = null;
+                        if (imageFile) {
+                            try {
+                                const compressedImage = await compressImage(imageFile);
+                                imageData = await imageToBase64(compressedImage);
+                            } catch (imageError) {
+                                console.error('Error procesando imagen:', imageError);
+                                showNotification('Advertencia', 'No se pudo procesar la imagen, continuando sin ella', 'warning');
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_zonita', {
+                            title: businessName,
+                            businessName: businessName,
+                            description: description,
+                            phone: phone || 'No disponible',
+                            image: imageData || '👨‍🔧',
+                            owner_id: state.currentUser.id
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('zonitaBusinessName')) getElement('zonitaBusinessName').value = '';
+                            if (getElement('zonitaDescription')) getElement('zonitaDescription').value = '';
+                            if (getElement('zonitaPhone')) getElement('zonitaPhone').value = '';
+                            if (getElement('zonitaImage')) getElement('zonitaImage').value = '';
+                            if (getElement('zonitaImagePreview')) {
+                                getElement('zonitaImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona una imagen</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addZonitaModal'));
+                            showNotification('Éxito', 'Zonita creada correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error creando zonita:', error);
+                        showNotification('Error', 'No se pudo crear la zonita', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar producto a negocio
+            const addProductZoneBtn = getElement('addProductZoneBtn');
+            if (addProductZoneBtn) {
+                addProductZoneBtn.addEventListener('click', async () => {
+                    const zoneId = getElement('zoneSelect')?.value;
+                    const productName = getElement('productZoneName')?.value.trim() || '';
+                    const productPrice = getElement('productZonePrice')?.value.trim() || '';
+                    const imageFile = getElement('productZoneImage')?.files[0] || null;
+                    
+                    if (!zoneId || !productName || !productPrice) {
+                        showNotification('Campos requeridos', 'Completa todos los campos', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para agregar productos', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Agregando producto...', 'info', 0);
+                        
+                        let imageData = null;
+                        if (imageFile) {
+                            try {
+                                const compressedImage = await compressImage(imageFile);
+                                imageData = await imageToBase64(compressedImage);
+                            } catch (imageError) {
+                                console.error('Error procesando imagen:', imageError);
+                                showNotification('Advertencia', 'No se pudo procesar la imagen, continuando sin ella', 'warning');
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_product', {
+                            entityType: 'zona',
+                            entityId: zoneId,
+                            name: productName,
+                            price: productPrice,
+                            image: imageData || '📦',
+                            created_by: state.currentUser.id
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('zoneSelect')) getElement('zoneSelect').value = '';
+                            if (getElement('productZoneName')) getElement('productZoneName').value = '';
+                            if (getElement('productZonePrice')) getElement('productZonePrice').value = '';
+                            if (getElement('productZoneImage')) getElement('productZoneImage').value = '';
+                            if (getElement('productZoneImagePreview')) {
+                                getElement('productZoneImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona una imagen</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addProductZoneModal'));
+                            showNotification('Éxito', 'Producto agregado correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error agregando producto:', error);
+                        showNotification('Error', 'No se pudo agregar el producto', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar producto a zonita
+            const addProductZonitaBtn = getElement('addProductZonitaBtn');
+            if (addProductZonitaBtn) {
+                addProductZonitaBtn.addEventListener('click', async () => {
+                    const zonitaId = getElement('zonitaSelect')?.value;
+                    const productName = getElement('productZonitaName')?.value.trim() || '';
+                    const productPrice = getElement('productZonitaPrice')?.value.trim() || '';
+                    const imageFile = getElement('productZonitaImage')?.files[0] || null;
+                    
+                    if (!zonitaId || !productName || !productPrice) {
+                        showNotification('Campos requeridos', 'Completa todos los campos', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para agregar productos', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Agregando producto...', 'info', 0);
+                        
+                        let imageData = null;
+                        if (imageFile) {
+                            try {
+                                const compressedImage = await compressImage(imageFile);
+                                imageData = await imageToBase64(compressedImage);
+                            } catch (imageError) {
+                                console.error('Error procesando imagen:', imageError);
+                                showNotification('Advertencia', 'No se pudo procesar la imagen, continuando sin ella', 'warning');
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_product', {
+                            entityType: 'zonita',
+                            entityId: zonitaId,
+                            name: productName,
+                            price: productPrice,
+                            image: imageData || '📦',
+                            created_by: state.currentUser.id
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('zonitaSelect')) getElement('zonitaSelect').value = '';
+                            if (getElement('productZonitaName')) getElement('productZonitaName').value = '';
+                            if (getElement('productZonitaPrice')) getElement('productZonitaPrice').value = '';
+                            if (getElement('productZonitaImage')) getElement('productZonitaImage').value = '';
+                            if (getElement('productZonitaImagePreview')) {
+                                getElement('productZonitaImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-image fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona una imagen</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addProductZonitaModal'));
+                            showNotification('Éxito', 'Producto agregado correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error agregando producto:', error);
+                        showNotification('Error', 'No se pudo agregar el producto', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar intercambio
+            const addExchangeBtn = getElement('addExchangeBtn');
+            if (addExchangeBtn) {
+                addExchangeBtn.addEventListener('click', async () => {
+                    const title = getElement('exchangeTitle')?.value.trim() || '';
+                    const offer = getElement('exchangeOffer')?.value.trim() || '';
+                    const request = getElement('exchangeRequest')?.value.trim() || '';
+                    const location = getElement('exchangeLocation')?.value.trim() || '';
+                    const imageFiles = getElement('exchangeImages')?.files || null;
+                    
+                    if (!title || !offer || !request || !location) {
+                        showNotification('Campos requeridos', 'Completa todos los campos', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para crear intercambios', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Creando intercambio...', 'info', 0);
+                        
+                        const images = [];
+                        if (imageFiles && imageFiles.length > 0) {
+                            for (let i = 0; i < Math.min(imageFiles.length, 3); i++) {
+                                try {
+                                    const compressedImage = await compressImage(imageFiles[i]);
+                                    const imageData = await imageToBase64(compressedImage);
+                                    images.push(imageData);
+                                } catch (imageError) {
+                                    console.error('Error procesando imagen:', imageError);
+                                }
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_intercambio', {
+                            title: title,
+                            offer: offer,
+                            request: request,
+                            location: location,
+                            images: images,
+                            author_id: state.currentUser.id,
+                            author_phone: state.currentUser.phone || 'No disponible'
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('exchangeTitle')) getElement('exchangeTitle').value = '';
+                            if (getElement('exchangeOffer')) getElement('exchangeOffer').value = '';
+                            if (getElement('exchangeRequest')) getElement('exchangeRequest').value = '';
+                            if (getElement('exchangeLocation')) getElement('exchangeLocation').value = '';
+                            if (getElement('exchangeImages')) getElement('exchangeImages').value = '';
+                            if (getElement('exchangeImagePreview')) {
+                                getElement('exchangeImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-images fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona imágenes</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addExchangeModal'));
+                            showNotification('Éxito', 'Intercambio creado correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error creando intercambio:', error);
+                        showNotification('Error', 'No se pudo crear el intercambio', 'error');
+                    }
+                });
+            }
+
+            // Botón de agregar propiedad
+            const addPropertyBtn = getElement('addPropertyBtn');
+            if (addPropertyBtn) {
+                addPropertyBtn.addEventListener('click', async () => {
+                    const title = getElement('propertyTitle')?.value.trim() || '';
+                    const type = getElement('propertyType')?.value || '';
+                    const location = getElement('propertyLocation')?.value.trim() || '';
+                    const description = getElement('propertyDescription')?.value.trim() || '';
+                    const price = getElement('propertyPrice')?.value.trim() || '';
+                    const exchange = getElement('propertyExchange')?.value.trim() || '';
+                    const imageFiles = getElement('propertyImages')?.files || null;
+                    
+                    if (!title || !type || !location || !description) {
+                        showNotification('Campos requeridos', 'Completa todos los campos obligatorios', 'warning');
+                        return;
+                    }
+                    
+                    if (type === 'venta' && !price) {
+                        showNotification('Campo requerido', 'Ingresa el precio para venta', 'warning');
+                        return;
+                    }
+                    
+                    if (type === 'permuta' && !exchange) {
+                        showNotification('Campo requerido', 'Describe lo que buscas en permuta', 'warning');
+                        return;
+                    }
+                    
+                    if (!state.currentUser) {
+                        showNotification('Inicia sesión', 'Debes iniciar sesión para publicar propiedades', 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        showNotification('Procesando', 'Publicando propiedad...', 'info', 0);
+                        
+                        const images = [];
+                        if (imageFiles && imageFiles.length > 0) {
+                            for (let i = 0; i < Math.min(imageFiles.length, 5); i++) {
+                                try {
+                                    const compressedImage = await compressImage(imageFiles[i]);
+                                    const imageData = await imageToBase64(compressedImage);
+                                    images.push(imageData);
+                                } catch (imageError) {
+                                    console.error('Error procesando imagen:', imageError);
+                                }
+                            }
+                        }
+                        
+                        const result = await saveToD1('add_propiedad', {
+                            title: title,
+                            type: type,
+                            location: location,
+                            description: description,
+                            price: type === 'venta' || type === 'ambas' ? price : '',
+                            exchange: type === 'permuta' || type === 'ambas' ? exchange : '',
+                            images: images,
+                            author_id: state.currentUser.id,
+                            author_phone: state.currentUser.phone || 'No disponible'
+                        });
+                        
+                        if (result.success) {
+                            // Limpiar formulario
+                            if (getElement('propertyTitle')) getElement('propertyTitle').value = '';
+                            if (getElement('propertyType')) getElement('propertyType').value = 'venta';
+                            if (getElement('propertyLocation')) getElement('propertyLocation').value = '';
+                            if (getElement('propertyDescription')) getElement('propertyDescription').value = '';
+                            if (getElement('propertyPrice')) getElement('propertyPrice').value = '';
+                            if (getElement('propertyExchange')) getElement('propertyExchange').value = '';
+                            if (getElement('propertyImages')) getElement('propertyImages').value = '';
+                            if (getElement('propertyImagePreview')) {
+                                getElement('propertyImagePreview').innerHTML = `
+                                    <div class="image-preview-text">
+                                        <i class="fas fa-images fa-2x" style="margin-bottom: 0.5rem;"></i>
+                                        <div>Selecciona imágenes</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            hideModal(getElement('addPropertyModal'));
+                            showNotification('Éxito', 'Propiedad publicada correctamente', 'success');
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error publicando propiedad:', error);
+                        showNotification('Error', 'No se pudo publicar la propiedad', 'error');
+                    }
+                });
+            }
+        }
+
+        // ==================== INICIALIZACIÓN ====================
+
+        /**
+         * Inicializa la aplicación
+         */
+        /**
+ * Inicializa la aplicación - VERSIÓN CORREGIDA
+ */
+/**
+ * Inicializa la aplicación - VERSIÓN CORREGIDA CON ACTUALIZACIÓN AUTOMÁTICA
+ */
+async function initializeApp() {
+    console.log('🚀 Iniciando aplicación con actualización automática...');
+    
+    try {
+        // PRIMERO: Cargar datos inmediatamente al iniciar
+        console.log('📥 Cargando datos iniciales...');
+        await loadData(true); // forceRefresh = true
+        
+        // Configurar UI con datos cargados
+        setupNavigation();
+        setupEventListeners();
+        renderAllSections();
+        updateUIForUser();
+        
+        // SEGUNDO: Inicializar WebSocket para actualizaciones en tiempo real
+        console.log('🔌 Inicializando WebSocket...');
+        state.wsManager = new WebSocketManager();
+        
+        // Configurar handlers
+        state.wsManager.on('data_updated', (data) => {
+            console.log('🔄 Actualización recibida via WebSocket:', data.operation);
+            state.wsManager.handleDataUpdate(data);
+        });
+        
+        state.wsManager.on('user_notification', (data) => {
+            console.log('📢 Notificación personalizada recibida:', data.message);
+            state.wsManager.handleUserNotification(data);
+        });
+        
+        state.wsManager.on('authenticated', (data) => {
+            console.log('✅ Autenticación exitosa:', data.user.name);
+        });
+        
+        // Conectar WebSocket (pero no bloquear la app si falla)
+        state.wsManager.connect().catch(error => {
+            console.warn('⚠️ WebSocket no disponible, continuando en modo standalone:', error.message);
+        });
+        
+        // Ocultar pantalla de carga
+        hideLoadingScreen();
+        
+        console.log('✅ Aplicación inicializada con datos cargados');
+        
+    } catch (error) {
+        console.error('💥 Error en initializeApp:', error);
+        
+        // Modo fallback: asegurar que al menos los datos básicos se carguen
+        showNotification('Modo sin conexión', 'Funcionando con datos locales', 'warning');
+        
+        await loadData(true); // Forzar carga incluso en modo fallback
+        setupNavigation();
+        setupEventListeners();
+        renderAllSections();
+        updateUIForUser();
+        hideLoadingScreen();
+    }
+}
+
+        // ==================== MANEJO DE CONEXIÓN/RECONEXIÓN ====================
+
+        // Reconectar cuando la pestaña se vuelve visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && state.wsManager && !state.wsManager.isConnected) {
+                console.log('🔄 Reconectando WebSocket (pestaña visible)');
+                state.wsManager.connect().catch(error => {
+                    console.warn('❌ Reconexión fallida:', error);
+                });
+            }
+        });
+
+        // Reconectar cuando se restaura la conexión
+        window.addEventListener('online', () => {
+            if (state.wsManager && !state.wsManager.isConnected) {
+                console.log('🌐 Reconectando WebSocket (la conexión ha sido restaurada)');
+                state.wsManager.connect().catch(error => {
+                    console.warn('❌ Reconexión fallida:', error);
+                });
+            }
+        });
+
+
+
+        // ==================== ACTUALIZACIÓN AUTOMÁTICA AL ABRIR APP ====================
+
+/**
+ * Verifica y actualiza datos cuando la app se vuelve visible
+ */
+function setupAppVisibilityHandler() {
+    // Actualizar cuando la app se vuelve visible - TIMER SEGURO
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            console.log('👀 App visible - verificando actualizaciones...');
+            // TIMER SEGURO: 1000ms para asegurar estabilidad completa
+            setTimeout(() => {
+                loadData(true).catch(error => {
+                    console.warn('⚠️ No se pudo actualizar al volver visible:', error);
+                });
+            }, 1000);
+        }
+    });
+    
+    // Actualizar cuando se restablece la conexión - TIMER SEGURO
+    window.addEventListener('online', () => {
+        console.log('🌐 Conexión restablecida - actualizando datos...');
+        // TIMER SEGURO: 2000ms para esperar conexión estable
+        setTimeout(() => {
+            loadData(true).catch(error => {
+                console.warn('⚠️ No se pudo actualizar al reconectar:', error);
+            });
+        }, 2000);
+    });
+    
+    // TIMER SEGURO: Actualización periódica cada 120 segundos
+    setInterval(() => {
+        if (!document.hidden && navigator.onLine) {
+            console.log('🕒 Actualización periódica de datos...');
+            loadData().catch(error => {
+                console.warn('⚠️ Error en actualización periódica:', error);
+            });
+        }
+    }, 120000); // 120 segundos - MUY CONSERVADOR
+}
+
+
+// Modificar initializeApp para incluir el handler de visibilidad
+const originalInitializeApp = initializeApp;
+initializeApp = async function() {
+    await originalInitializeApp();
+    setupAppVisibilityHandler(); // Configurar handlers de actualización automática
+};
+
+
+        // ==================== INICIO DE LA APLICACIÓN ====================
+
+        // Iniciar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        // Funciones globales para acceso desde HTML
+        window.showModal = showModal;
+        window.hideModal = hideModal;
+        window.scrollSection = scrollSection;
+        window.setImageSource = setImageSource;
+        window.handleEditPrice = handleEditPrice;
+        window.handleMarkOutOfStock = handleMarkOutOfStock;
+        window.handleDeleteProduct = handleDeleteProduct;
+        window.handleProductRating = handleProductRating;
+    </script>
+</body>
+</html>
